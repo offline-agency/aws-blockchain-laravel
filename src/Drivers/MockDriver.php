@@ -23,12 +23,10 @@ class MockDriver implements BlockchainDriverInterface
     /**
      * Record an event on the blockchain
      *
-     * @param  array<string, mixed>|null  $data
+     * @param  array<string, mixed>  $data
      */
     public function recordEvent(array $data = []): string
     {
-        $data = $data ?? [];
-
         $id = 'mock_'.$this->type.'_'.uniqid();
 
         $this->events[$id] = [

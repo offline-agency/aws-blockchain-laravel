@@ -1,6 +1,5 @@
 includes:
     - vendor/phpstan/phpstan/conf/bleedingEdge.neon
-    - vendor/laravel/framework/phpstan.neon
 
 parameters:
     level: 8
@@ -10,6 +9,16 @@ parameters:
         - tests
     ignoreErrors:
         - '#Call to an undefined method Illuminate\\Support\\Facades\\Facade::__callStatic\(\)#'
-    checkMissingIterableValueType: false
-    checkGenericClassInNonGenericObjectType: false
+        - '#Call to an undefined method Illuminate\\Support\\Facades\\Facade::getFacadeRoot\(\)#'
+        - '#Call to an undefined static method Illuminate\\Support\\Facades\\Facade::__callStatic\(\)#'
+        - '#Access to an undefined property Illuminate\\Support\\Facades\\Facade::\$resolvedInstance#'
+        - '#Call to an undefined method Aws\\ManagedBlockchain\\ManagedBlockchainClient::invoke\(\)#'
+        - '#Call to an undefined method Aws\\ManagedBlockchain\\ManagedBlockchainClient::describeNetwork\(\)#'
+        - '#Call to an undefined method Aws\\QLDB\\QLDBClient::sendCommand\(\)#'
+        - '#Call to an undefined method Aws\\QLDB\\QLDBClient::describeLedger\(\)#'
+        - '#Method.*getAvailableDrivers\(\) should return.*but returns#'
+        -
+            identifier: missingType.iterableValue
+        -
+            identifier: missingType.generics
     reportUnmatchedIgnoredErrors: false

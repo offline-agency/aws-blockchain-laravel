@@ -26,7 +26,7 @@ jobs:
       uses: shivammathur/setup-php@v2
       with:
         php-version: ${{ matrix.php }}
-        extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick
+        extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, xdebug
         coverage: xdebug
         
     - name: Get composer cache directory
@@ -42,13 +42,12 @@ jobs:
         
     - name: Install dependencies
       run: |
-        composer install --prefer-dist --no-progress --no-suggest --no-interaction --no-dev
         composer require "laravel/framework:${{ matrix.laravel }}" --no-update
-        composer update --prefer-dist --no-progress --no-suggest --no-interaction
+        composer install --prefer-dist --no-progress --no-suggest --no-interaction --with-all-dependencies
         
     - name: Execute tests
       run: |
-        vendor/bin/pest --coverage --min=80
+        vendor/bin/pest --coverage --min=80 --coverage-clover=coverage.xml
         
     - name: Upload coverage to Codecov
       if: matrix.php == '8.3' && matrix.laravel == '11.*'

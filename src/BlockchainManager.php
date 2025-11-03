@@ -69,7 +69,7 @@ class BlockchainManager
     /**
      * Get all available drivers
      *
-     * @return array<string, array{type: string, available: bool, info: array<string, mixed>|null, error?: string}>
+     * @return array<string, array{type: string, available: bool, info?: array<string, mixed>, error?: string}>
      */
     public function getAvailableDrivers(): array
     {
