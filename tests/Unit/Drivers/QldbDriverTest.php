@@ -49,9 +49,9 @@ class QldbDriverTest extends TestCase
 
     public function test_can_record_event_successfully()
     {
-        // Mock session token
+        // Mock session token (called twice: once in recordEvent, once in startTransaction)
         $this->mockClient->shouldReceive('sendCommand')
-            ->once()
+            ->twice()
             ->andReturn(new Result(['StartSession' => ['SessionToken' => 'test-session-token']]));
 
         // Mock start transaction
@@ -97,9 +97,9 @@ class QldbDriverTest extends TestCase
     {
         $expectedData = ['test' => 'data'];
 
-        // Mock session token
+        // Mock session token (called twice: once in getEvent, once in startTransaction)
         $this->mockClient->shouldReceive('sendCommand')
-            ->once()
+            ->twice()
             ->andReturn(new Result(['StartSession' => ['SessionToken' => 'test-session-token']]));
 
         // Mock start transaction
@@ -149,9 +149,9 @@ class QldbDriverTest extends TestCase
 
     public function test_returns_null_for_empty_get_event_result()
     {
-        // Mock session token
+        // Mock session token (called twice: once in getEvent, once in startTransaction)
         $this->mockClient->shouldReceive('sendCommand')
-            ->once()
+            ->twice()
             ->andReturn(new Result(['StartSession' => ['SessionToken' => 'test-session-token']]));
 
         // Mock start transaction
@@ -179,9 +179,9 @@ class QldbDriverTest extends TestCase
         $testData = ['test' => 'data'];
         $expectedHash = hash('sha256', json_encode($testData).'test-ledger');
 
-        // Mock session token
+        // Mock session token (called twice: once in verifyIntegrity, once in startTransaction)
         $this->mockClient->shouldReceive('sendCommand')
-            ->once()
+            ->twice()
             ->andReturn(new Result(['StartSession' => ['SessionToken' => 'test-session-token']]));
 
         // Mock start transaction
@@ -231,9 +231,9 @@ class QldbDriverTest extends TestCase
 
     public function test_returns_false_for_empty_verify_integrity_result()
     {
-        // Mock session token
+        // Mock session token (called twice: once in verifyIntegrity, once in startTransaction)
         $this->mockClient->shouldReceive('sendCommand')
-            ->once()
+            ->twice()
             ->andReturn(new Result(['StartSession' => ['SessionToken' => 'test-session-token']]));
 
         // Mock start transaction
@@ -285,7 +285,13 @@ class QldbDriverTest extends TestCase
 
     public function test_can_get_driver_info()
     {
-        $driver = new QldbDriver($this->config);
+        // Mock describeLedger for isAvailable() call in getDriverInfo()
+        $this->mockClient->shouldReceive('describeLedger')
+            ->once()
+            ->with(['Name' => 'test-ledger'])
+            ->andReturn(new Result(['Ledger' => ['Name' => 'test-ledger']]));
+
+        $driver = new QldbDriver($this->config, $this->mockClient, $this->mockSessionClient);
 
         $info = $driver->getDriverInfo();
 
@@ -302,7 +308,13 @@ class QldbDriverTest extends TestCase
             'secret_access_key' => 'test-secret',
         ];
 
-        $driver = new QldbDriver($minimalConfig);
+        // Mock describeLedger for isAvailable() call in getDriverInfo()
+        $this->mockClient->shouldReceive('describeLedger')
+            ->once()
+            ->with(['Name' => 'supply-chain-ledger'])
+            ->andReturn(new Result(['Ledger' => ['Name' => 'supply-chain-ledger']]));
+
+        $driver = new QldbDriver($minimalConfig, $this->mockClient, $this->mockSessionClient);
 
         $info = $driver->getDriverInfo();
 

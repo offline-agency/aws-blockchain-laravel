@@ -182,7 +182,7 @@ class BlockchainManagerEdgeCasesTest extends TestCase
 
         $this->assertNotSame($originalDriver, $newDriver);
         $this->assertEquals('mock', $originalDriver->getType());
-        $this->assertEquals('mock', $newDriver->getType()); // Both are mock type but different instances
+        $this->assertEquals('mock', $newDriver->getType()); // Both use 'mock' type from config, but different instances
     }
 
     public function test_config_preservation()

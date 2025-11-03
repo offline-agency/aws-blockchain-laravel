@@ -52,15 +52,17 @@ class BlockchainManager
         }
 
         $config = $this->config['drivers'][$name];
+        $driverType = $config['type'] ?? $name;
 
-        switch ($name) {
+        switch ($driverType) {
             case 'managed_blockchain':
                 return new ManagedBlockchainDriver($config);
             case 'qldb':
                 return new QldbDriver($config);
             case 'mock':
+                return new MockDriver($config['type'] ?? $name);
             default:
-                return new MockDriver($name);
+                throw new \InvalidArgumentException("Driver type '{$driverType}' is not supported.");
         }
     }
 
