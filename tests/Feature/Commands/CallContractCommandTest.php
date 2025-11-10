@@ -15,7 +15,7 @@ class CallContractCommandTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         BlockchainContract::create([
             'name' => 'TestContract',
             'version' => '1.0.0',

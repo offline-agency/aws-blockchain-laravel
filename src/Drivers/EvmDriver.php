@@ -21,20 +21,19 @@ class EvmDriver implements BlockchainDriverInterface
 
     /**
      * @param  array<string, mixed>  $config
-     * @param  Web3|null  $web3
      */
     public function __construct(array $config, ?Web3 $web3 = null)
     {
         $this->config = $config;
         $this->network = $config['network'] ?? 'mainnet';
-        
+
         if ($web3 !== null) {
             $this->web3 = $web3;
         } else {
             $provider = $config['rpc_url'] ?? 'http://localhost:8545';
             $this->web3 = new Web3($provider);
         }
-        
+
         $this->defaultAccount = $config['default_account'] ?? null;
     }
 
@@ -47,7 +46,7 @@ class EvmDriver implements BlockchainDriverInterface
     {
         // For EVM, this could be implemented as a contract call to a logging contract
         $eventId = uniqid('evt_', true);
-        
+
         // Store event data on-chain via smart contract
         // This is a placeholder implementation
         return $eventId;
@@ -154,7 +153,7 @@ class EvmDriver implements BlockchainDriverInterface
         }
 
         $contract = new Contract($this->web3->provider, $abi);
-        
+
         $transactionHash = null;
         $contractAddress = null;
         $gasUsed = null;
@@ -164,12 +163,12 @@ class EvmDriver implements BlockchainDriverInterface
             'from' => $from,
             'gas' => $params['gas_limit'] ?? '3000000',
         ];
-        
+
         $callback = function ($err, $result) use (&$transactionHash, &$contractAddress, &$gasUsed) {
             if ($err !== null) {
                 throw new \RuntimeException('Contract deployment failed: '.$err->getMessage());
             }
-            
+
             if (is_string($result)) {
                 $transactionHash = $result;
             } elseif (isset($result->contractAddress)) {
@@ -177,7 +176,7 @@ class EvmDriver implements BlockchainDriverInterface
                 $gasUsed = isset($result->gasUsed) ? hexdec($result->gasUsed) : null;
             }
         };
-        
+
         // Call new() with constructor params, then options, then callback
         // Merge all arguments to avoid "positional argument after unpacking" error in PHP 8.0+
         $contractInstance = $contract->bytecode($bytecode);
@@ -204,11 +203,7 @@ class EvmDriver implements BlockchainDriverInterface
     /**
      * Call a contract method
      *
-     * @param  string  $address
-     * @param  string  $abi
-     * @param  string  $method
      * @param  array<int, mixed>  $params
-     * @return mixed
      */
     public function callContract(string $address, string $abi, string $method, array $params = []): mixed
     {
@@ -244,7 +239,7 @@ class EvmDriver implements BlockchainDriverInterface
             if ($err !== null) {
                 throw new \RuntimeException('Gas estimation failed: '.$err->getMessage());
             }
-            
+
             $gas = is_object($result) ? (int) $result->toString() : (int) $result;
         });
 
@@ -264,7 +259,7 @@ class EvmDriver implements BlockchainDriverInterface
             if ($err !== null || $result === null) {
                 return;
             }
-            
+
             $receipt = [
                 'transactionHash' => $result->transactionHash ?? $hash,
                 'blockNumber' => isset($result->blockNumber) ? hexdec($result->blockNumber) : null,
@@ -290,7 +285,7 @@ class EvmDriver implements BlockchainDriverInterface
             if ($err !== null) {
                 throw new \RuntimeException('Failed to get gas price: '.$err->getMessage());
             }
-            
+
             $gasPrice = is_object($result) ? (int) $result->toString() : (int) $result;
         });
 
@@ -310,7 +305,7 @@ class EvmDriver implements BlockchainDriverInterface
             if ($err !== null) {
                 throw new \RuntimeException('Transaction failed: '.$err->getMessage());
             }
-            
+
             $transactionHash = $result;
         });
 
@@ -328,11 +323,10 @@ class EvmDriver implements BlockchainDriverInterface
             if ($err !== null) {
                 throw new \RuntimeException('Failed to get balance: '.$err->getMessage());
             }
-            
+
             $balance = is_object($result) ? $result->toString() : (string) $result;
         });
 
         return $balance;
     }
 }
-

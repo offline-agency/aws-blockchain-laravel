@@ -31,4 +31,3 @@ class DeployContractCommandTest extends TestCase
             ->assertSuccessful();
     }
 }
-

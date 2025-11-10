@@ -49,4 +49,3 @@ class ListContractsCommandTest extends TestCase
             ->assertSuccessful();
     }
 }
-

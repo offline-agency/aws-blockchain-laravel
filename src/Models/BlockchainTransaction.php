@@ -193,4 +193,3 @@ class BlockchainTransaction extends Model
         return in_array($this->status, ['failed', 'reverted']);
     }
 }
-

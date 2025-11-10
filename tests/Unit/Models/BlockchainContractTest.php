@@ -83,4 +83,3 @@ class BlockchainContractTest extends TestCase
         $this->assertEquals($abi, $parsedAbi);
     }
 }
-

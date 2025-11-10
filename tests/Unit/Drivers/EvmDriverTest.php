@@ -15,18 +15,20 @@ class EvmDriverTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Create a mock Web3 instance (works even if Web3 class doesn't exist)
         $web3Mock = Mockery::mock('Web3\Web3');
         $ethMock = Mockery::mock();
-        
+
         // Mock the eth property and its methods
         $web3Mock->eth = $ethMock;
         $web3Mock->provider = Mockery::mock();
-        
+
         // Mock blockNumber method
-        $blockNumberObj = new class {
-            public function toString(): string {
+        $blockNumberObj = new class
+        {
+            public function toString(): string
+            {
                 return '12345';
             }
         };
@@ -34,10 +36,12 @@ class EvmDriverTest extends TestCase
             ->andReturnUsing(function ($callback) use ($blockNumberObj) {
                 $callback(null, $blockNumberObj);
             });
-        
+
         // Mock chainId method
-        $chainIdObj = new class {
-            public function toString(): string {
+        $chainIdObj = new class
+        {
+            public function toString(): string
+            {
                 return '1';
             }
         };
@@ -45,7 +49,7 @@ class EvmDriverTest extends TestCase
             ->andReturnUsing(function ($callback) use ($chainIdObj) {
                 $callback(null, $chainIdObj);
             });
-        
+
         $this->driver = new EvmDriver([
             'network' => 'testnet',
             'rpc_url' => 'http://localhost:8545',

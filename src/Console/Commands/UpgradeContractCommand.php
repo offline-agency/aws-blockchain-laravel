@@ -66,7 +66,7 @@ class UpgradeContractCommand extends Command
             $config = config('aws-blockchain-laravel.contracts', []);
             $blockchain = App::make('blockchain');
             $driver = $blockchain->driver();
-            
+
             $compiler = new ContractCompiler($config['compiler'] ?? []);
             $deployer = new ContractDeployer($driver, $compiler, $config);
             $interactor = new ContractInteractor($driver, $config);
@@ -102,7 +102,7 @@ class UpgradeContractCommand extends Command
 
         } catch (\Exception $e) {
             $this->error('Upgrade failed: '.$e->getMessage());
-            
+
             if ($this->option('json')) {
                 $jsonOutput = json_encode([
                     'success' => false,
@@ -126,6 +126,7 @@ class UpgradeContractCommand extends Command
     {
         if (str_contains($identifier, '@')) {
             $parts = explode('@', $identifier, 2);
+
             return [$parts[0], $parts[1] ?? null];
         }
 
@@ -201,12 +202,12 @@ class UpgradeContractCommand extends Command
 
         $this->info('✓ Contract upgraded successfully!');
         $this->newLine();
-        
+
         $this->info('Old Contract:');
         $this->line('  Version: '.$result['old_contract']->version);
         $this->line('  Address: '.$result['old_contract']->address);
         $this->newLine();
-        
+
         $this->info('New Contract:');
         $this->line('  Version: '.$result['new_contract']->version);
         $this->line('  Address: '.$result['new_contract']->address);
@@ -214,4 +215,3 @@ class UpgradeContractCommand extends Command
         return Command::SUCCESS;
     }
 }
-

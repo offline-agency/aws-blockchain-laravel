@@ -50,7 +50,7 @@ class RollbackContractCommand extends Command
             $config = config('aws-blockchain-laravel.contracts', []);
             $blockchain = App::make('blockchain');
             $driver = $blockchain->driver();
-            
+
             $compiler = new ContractCompiler($config['compiler'] ?? []);
             $deployer = new ContractDeployer($driver, $compiler, $config);
             $interactor = new ContractInteractor($driver, $config);
@@ -98,4 +98,3 @@ class RollbackContractCommand extends Command
             ->first();
     }
 }
-

@@ -45,13 +45,14 @@ class ContractDeployer
 
         // For preview mode, use placeholder artifacts if not available
         $artifacts = null;
+
         try {
             $artifacts = $this->getContractArtifacts($contractName, $version, $params);
         } catch (\InvalidArgumentException $e) {
             // For preview, use placeholder artifacts
             if ($params['preview'] ?? false) {
                 $artifacts = [
-                    'bytecode' => '0x' . str_repeat('00', 100), // Placeholder bytecode
+                    'bytecode' => '0x'.str_repeat('00', 100), // Placeholder bytecode
                     'abi' => [],
                 ];
             } else {
@@ -73,7 +74,7 @@ class ContractDeployer
             try {
                 $gasEstimate = $this->estimateDeploymentGas($deployParams);
                 $deployParams['gas_limit'] = $gasEstimate;
-                
+
                 Log::info('Gas estimated for deployment', [
                     'contract' => $contractName,
                     'estimate' => $gasEstimate,
@@ -129,7 +130,7 @@ class ContractDeployer
             ];
 
             $estimate = $this->driver->estimateGas($transaction);
-            
+
             // Add safety margin
             $multiplier = $this->config['gas']['price_multiplier'] ?? 1.1;
 
@@ -294,4 +295,3 @@ class ContractDeployer
         return $contract;
     }
 }
-

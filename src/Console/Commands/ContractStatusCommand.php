@@ -92,4 +92,3 @@ class ContractStatusCommand extends Command
         return $query->first();
     }
 }
-

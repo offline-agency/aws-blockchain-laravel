@@ -45,9 +45,9 @@ class CompileContractCommand extends Command
             $compiler = new ContractCompiler($config);
 
             $this->info("Compiling contract '{$name}'...");
-            
+
             $result = $compiler->compileFromFile($source, $name);
-            
+
             // Store artifacts
             $compiler->storeArtifacts($name, $version, $result);
 
@@ -63,8 +63,8 @@ class CompileContractCommand extends Command
                 }
             } else {
                 $this->info('✓ Contract compiled successfully!');
-                $this->line("  ABI functions: ".count($result['abi']));
-                $this->line("  Bytecode size: ".strlen($result['bytecode'])." bytes");
+                $this->line('  ABI functions: '.count($result['abi']));
+                $this->line('  Bytecode size: '.strlen($result['bytecode']).' bytes');
             }
 
             return Command::SUCCESS;
@@ -75,4 +75,3 @@ class CompileContractCommand extends Command
         }
     }
 }
-

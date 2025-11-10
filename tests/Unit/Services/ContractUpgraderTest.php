@@ -18,16 +18,18 @@ class ContractUpgraderTest extends TestCase
     use RefreshDatabase;
 
     protected ContractUpgrader $upgrader;
+
     protected ContractDeployer $deployer;
+
     protected ContractInteractor $interactor;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $driver = new MockDriver('mock');
         $compiler = new ContractCompiler([]);
-        
+
         $this->deployer = new ContractDeployer($driver, $compiler, []);
         $this->interactor = new ContractInteractor($driver, []);
         $this->upgrader = new ContractUpgrader($this->deployer, $this->interactor, []);

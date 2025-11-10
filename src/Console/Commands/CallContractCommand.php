@@ -95,7 +95,7 @@ class CallContractCommand extends Command
 
         } catch (\Exception $e) {
             $this->error('Contract call failed: '.$e->getMessage());
-            
+
             if ($this->option('json')) {
                 $jsonOutput = json_encode([
                     'success' => false,
@@ -127,11 +127,11 @@ class CallContractCommand extends Command
         // If not found, try by name
         if (! $contract) {
             $query = BlockchainContract::where('name', $identifier);
-            
+
             if ($this->option('network')) {
                 $query->where('network', $this->option('network'));
             }
-            
+
             $contract = $query->where('status', 'deployed')->latest()->first();
         }
 
@@ -162,11 +162,11 @@ class CallContractCommand extends Command
 
         $this->info("✓ Method '{$methodName}' executed successfully!");
         $this->newLine();
-        
+
         if (is_array($result) && isset($result['transaction_hash'])) {
             $this->info('Transaction sent:');
             $this->line('  Hash: '.$result['transaction_hash']);
-            
+
             if (isset($result['transaction_record'])) {
                 $this->line('  Status: '.$result['transaction_record']->status);
             }
@@ -178,4 +178,3 @@ class CallContractCommand extends Command
         return Command::SUCCESS;
     }
 }
-

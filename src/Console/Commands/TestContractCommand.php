@@ -50,7 +50,7 @@ class TestContractCommand extends Command
             $config = config('aws-blockchain-laravel.contracts', []);
             $blockchain = App::make('blockchain');
             $driver = $blockchain->driver();
-            
+
             $compiler = new ContractCompiler($config['compiler'] ?? []);
             $deployer = new ContractDeployer($driver, $compiler, $config);
             $interactor = new ContractInteractor($driver, $config);
@@ -83,7 +83,7 @@ class TestContractCommand extends Command
 
         } catch (\Exception $e) {
             $this->error('Testing failed: '.$e->getMessage());
-            
+
             if ($this->option('json')) {
                 $jsonOutput = json_encode([
                     'success' => false,
@@ -101,7 +101,6 @@ class TestContractCommand extends Command
     /**
      * Run basic tests on contract
      *
-     * @param  \AwsBlockchain\Laravel\Models\BlockchainContract  $contract
      * @return array<string, mixed>
      */
     protected function runBasicTests(\AwsBlockchain\Laravel\Models\BlockchainContract $contract, ContractInteractor $interactor): array
@@ -181,4 +180,3 @@ class TestContractCommand extends Command
         return $results['failed'] > 0 ? Command::FAILURE : Command::SUCCESS;
     }
 }
-

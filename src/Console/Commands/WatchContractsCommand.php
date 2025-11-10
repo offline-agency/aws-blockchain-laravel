@@ -22,7 +22,7 @@ class WatchContractsCommand extends Command
     public function handle(): int
     {
         $config = config('aws-blockchain-laravel.contracts', []);
-        
+
         if (! ($config['hot_reload']['enabled'] ?? false)) {
             $this->error('Hot reload is not enabled in configuration');
 
@@ -72,7 +72,7 @@ class WatchContractsCommand extends Command
                 $previousHash = $this->fileHashes[$file] ?? null;
 
                 if ($previousHash !== null && $currentHash !== $previousHash) {
-                    $this->info("Change detected in ".basename($file));
+                    $this->info('Change detected in '.basename($file));
                     $this->redeployContract($file, $config);
                 }
 
@@ -90,7 +90,7 @@ class WatchContractsCommand extends Command
     {
         try {
             $contractName = pathinfo($file, PATHINFO_FILENAME);
-            
+
             $blockchain = App::make('blockchain');
             $driver = $blockchain->driver();
             $compiler = new ContractCompiler($config['compiler'] ?? []);
@@ -100,7 +100,7 @@ class WatchContractsCommand extends Command
 
             $networkOption = $this->option('network');
             $network = is_string($networkOption) ? $networkOption : 'local';
-            
+
             $result = $deployer->deploy([
                 'name' => $contractName,
                 'version' => 'dev-'.time(),
@@ -114,4 +114,3 @@ class WatchContractsCommand extends Command
         }
     }
 }
-

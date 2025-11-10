@@ -15,7 +15,7 @@ class ContractCompilerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->compiler = new ContractCompiler([
             'solc_path' => 'solc',
             'storage_path' => storage_path('app/contracts'),
@@ -103,4 +103,3 @@ class ContractCompilerTest extends TestCase
         }
     }
 }
-

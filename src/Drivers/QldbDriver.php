@@ -19,8 +19,6 @@ class QldbDriver implements BlockchainDriverInterface
 
     /**
      * @param  array<string, mixed>  $config
-     * @param  QLDBClient|null  $client
-     * @param  QLDBSessionClient|null  $sessionClient
      */
     public function __construct(array $config, ?QLDBClient $client = null, ?QLDBSessionClient $sessionClient = null)
     {
@@ -78,6 +76,7 @@ class QldbDriver implements BlockchainDriverInterface
                 'error' => $e->getMessage(),
                 'data' => $data,
             ]);
+
             throw $e;
         }
     }
@@ -259,11 +258,7 @@ class QldbDriver implements BlockchainDriverInterface
     /**
      * Call a contract method (not applicable for QLDB)
      *
-     * @param  string  $address
-     * @param  string  $abi
-     * @param  string  $method
      * @param  array<int, mixed>  $params
-     * @return mixed
      */
     public function callContract(string $address, string $abi, string $method, array $params = []): mixed
     {
@@ -290,7 +285,6 @@ class QldbDriver implements BlockchainDriverInterface
     /**
      * Get transaction receipt
      *
-     * @param  string  $hash
      * @return array<string, mixed>|null
      */
     public function getTransactionReceipt(string $hash): ?array
@@ -303,7 +297,7 @@ class QldbDriver implements BlockchainDriverInterface
                 'SessionToken' => $this->getSessionToken(),
                 'ExecuteStatement' => [
                     'TransactionId' => $this->startTransaction(),
-                    'Statement' => "SELECT * FROM _ql_committed_transactions WHERE txId = ?",
+                    'Statement' => 'SELECT * FROM _ql_committed_transactions WHERE txId = ?',
                     'Parameters' => [
                         ['StringValue' => $hash],
                     ],
@@ -363,14 +357,13 @@ class QldbDriver implements BlockchainDriverInterface
                 'error' => $e->getMessage(),
                 'transaction' => $transaction,
             ]);
+
             throw $e;
         }
     }
 
     /**
      * Get account balance (not applicable for QLDB)
-     *
-     * @param  string  $address
      */
     public function getBalance(string $address): string
     {

@@ -73,4 +73,3 @@ class VerifyContractCommand extends Command
         return $query->first();
     }
 }
-

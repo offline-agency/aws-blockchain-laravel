@@ -41,7 +41,7 @@ class DeployContractCommand extends Command
     public function handle(): int
     {
         $contractName = $this->argument('name');
-        
+
         if (! is_string($contractName)) {
             $this->error('Contract name must be a string');
 
@@ -55,9 +55,9 @@ class DeployContractCommand extends Command
         $networkOption = $this->option('network');
         $network = is_string($networkOption) ? $networkOption : ($config['default_network'] ?? 'local');
         $networkConfig = $config['networks'][$network] ?? [];
-        
+
         $driver = $this->getDriverForNetwork($blockchain, $networkConfig);
-        
+
         // Initialize services
         $compiler = new ContractCompiler($config['compiler'] ?? []);
         $deployer = new ContractDeployer($driver, $compiler, $config);
@@ -79,7 +79,7 @@ class DeployContractCommand extends Command
 
             // Deploy contract
             $this->info("Deploying contract '{$contractName}' to {$network}...");
-            
+
             $result = $deployer->deploy($params);
 
             // Verify if requested
@@ -93,7 +93,7 @@ class DeployContractCommand extends Command
 
         } catch (\Exception $e) {
             $this->error('Deployment failed: '.$e->getMessage());
-            
+
             if ($this->option('json')) {
                 $jsonOutput = json_encode([
                     'success' => false,
@@ -227,7 +227,7 @@ class DeployContractCommand extends Command
 
         $this->info('✓ Contract deployed successfully!');
         $this->newLine();
-        
+
         $this->table(
             ['Property', 'Value'],
             [
@@ -248,15 +248,13 @@ class DeployContractCommand extends Command
      *
      * @param  mixed  $blockchain
      * @param  array<string, mixed>  $networkConfig
-     * @return \AwsBlockchain\Laravel\Contracts\BlockchainDriverInterface
      */
     protected function getDriverForNetwork($blockchain, array $networkConfig): \AwsBlockchain\Laravel\Contracts\BlockchainDriverInterface
     {
         $type = $networkConfig['type'] ?? 'evm';
-        
+
         // For EVM networks, we'd need to configure the driver with network-specific settings
         // This is a simplified version
         return $blockchain->driver();
     }
 }
-

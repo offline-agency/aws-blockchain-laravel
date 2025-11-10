@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AwsBlockchain\Laravel\Services;
 
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
 
 class ContractCompiler
 {
@@ -187,8 +186,8 @@ class ContractCompiler
     public function getMethod(array $abi, string $methodName): ?array
     {
         foreach ($abi as $item) {
-            if (is_array($item) && 
-                ($item['type'] ?? '') === 'function' && 
+            if (is_array($item) &&
+                ($item['type'] ?? '') === 'function' &&
                 ($item['name'] ?? '') === $methodName) {
                 return $item;
             }
@@ -277,4 +276,3 @@ class ContractCompiler
         return 'unknown';
     }
 }
-

@@ -15,12 +15,13 @@ class ContractInteractorTest extends TestCase
     use RefreshDatabase;
 
     protected ContractInteractor $interactor;
+
     protected MockDriver $driver;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->driver = new MockDriver('mock');
         $this->interactor = new ContractInteractor($this->driver, [
             'gas' => [

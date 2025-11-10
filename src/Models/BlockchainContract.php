@@ -144,7 +144,6 @@ class BlockchainContract extends Model
      * Scope a query to filter by network.
      *
      * @param  \Illuminate\Database\Eloquent\Builder<BlockchainContract>  $query
-     * @param  string  $network
      * @return \Illuminate\Database\Eloquent\Builder<BlockchainContract>
      */
     public function scopeOnNetwork($query, string $network): \Illuminate\Database\Eloquent\Builder
@@ -205,4 +204,3 @@ class BlockchainContract extends Model
         return "{$this->name}@{$this->version}";
     }
 }
-

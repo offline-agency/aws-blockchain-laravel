@@ -16,19 +16,21 @@ class ContractDeployerTest extends TestCase
     use RefreshDatabase;
 
     protected ContractDeployer $deployer;
+
     protected MockDriver $driver;
+
     protected ContractCompiler $compiler;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->driver = new MockDriver('mock');
         $this->compiler = new ContractCompiler([
             'solc_path' => 'solc',
             'storage_path' => storage_path('app/contracts'),
         ]);
-        
+
         $this->deployer = new ContractDeployer(
             $this->driver,
             $this->compiler,

@@ -33,13 +33,13 @@ return new class extends Migration
             $table->index(['contract_id', 'method_name']);
             $table->index(['status', 'created_at']);
             $table->index('block_number');
-            
+
             // Foreign keys
             $table->foreign('contract_id')
                 ->references('id')
                 ->on('blockchain_contracts')
                 ->onDelete('cascade');
-                
+
             $table->foreign('rollback_id')
                 ->references('id')
                 ->on('blockchain_transactions')
@@ -55,4 +55,3 @@ return new class extends Migration
         Schema::dropIfExists('blockchain_transactions');
     }
 };
-
