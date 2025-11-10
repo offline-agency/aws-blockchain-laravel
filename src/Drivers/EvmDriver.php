@@ -21,14 +21,19 @@ class EvmDriver implements BlockchainDriverInterface
 
     /**
      * @param  array<string, mixed>  $config
+     * @param  Web3|null  $web3
      */
-    public function __construct(array $config)
+    public function __construct(array $config, ?Web3 $web3 = null)
     {
         $this->config = $config;
         $this->network = $config['network'] ?? 'mainnet';
         
-        $provider = $config['rpc_url'] ?? 'http://localhost:8545';
-        $this->web3 = new Web3($provider);
+        if ($web3 !== null) {
+            $this->web3 = $web3;
+        } else {
+            $provider = $config['rpc_url'] ?? 'http://localhost:8545';
+            $this->web3 = new Web3($provider);
+        }
         
         $this->defaultAccount = $config['default_account'] ?? null;
     }

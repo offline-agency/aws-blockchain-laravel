@@ -22,7 +22,7 @@ class DeployContractCommand extends Command
                             {--network= : Network to deploy to}
                             {--from= : Deployer address}
                             {--source= : Path to contract source file}
-                            {--version=1.0.0 : Contract version}
+                            {--contract-version=1.0.0 : Contract version}
                             {--verify : Verify contract on block explorer}
                             {--preview : Preview deployment without executing}
                             {--gas-limit= : Gas limit for deployment}
@@ -118,7 +118,7 @@ class DeployContractCommand extends Command
     {
         $params = [
             'name' => $contractName,
-            'version' => $this->option('version'),
+            'version' => $this->option('contract-version'),
             'network' => $this->option('network') ?? $config['default_network'] ?? 'local',
             'from' => $this->option('from'),
             'preview' => $this->option('preview'),

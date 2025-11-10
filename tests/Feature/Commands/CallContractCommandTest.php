@@ -60,6 +60,7 @@ class CallContractCommandTest extends TestCase
         $this->artisan('blockchain:call', [
             'contract' => 'TestContract',
             'method' => 'balanceOf',
+            '--params' => '0x1234567890123456789012345678901234567890',
             '--network' => 'local',
         ])
             ->assertSuccessful();

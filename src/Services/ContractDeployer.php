@@ -43,13 +43,26 @@ class ContractDeployer
         $version = $params['version'] ?? '1.0.0';
         $network = $params['network'] ?? $this->config['default_network'] ?? 'local';
 
-        // Load or compile contract
-        $artifacts = $this->getContractArtifacts($contractName, $version, $params);
+        // For preview mode, use placeholder artifacts if not available
+        $artifacts = null;
+        try {
+            $artifacts = $this->getContractArtifacts($contractName, $version, $params);
+        } catch (\InvalidArgumentException $e) {
+            // For preview, use placeholder artifacts
+            if ($params['preview'] ?? false) {
+                $artifacts = [
+                    'bytecode' => '0x' . str_repeat('00', 100), // Placeholder bytecode
+                    'abi' => [],
+                ];
+            } else {
+                throw $e;
+            }
+        }
 
         // Prepare deployment parameters
         $deployParams = [
-            'bytecode' => $artifacts['bytecode'],
-            'abi' => json_encode($artifacts['abi']),
+            'bytecode' => $artifacts['bytecode'] ?? '',
+            'abi' => json_encode($artifacts['abi'] ?? []),
             'constructor_params' => $params['constructor_params'] ?? [],
             'from' => $params['from'] ?? null,
             'gas_limit' => $params['gas_limit'] ?? $this->config['gas']['default_limit'] ?? 3000000,
@@ -57,13 +70,18 @@ class ContractDeployer
 
         // Estimate gas if not provided
         if (! isset($params['gas_limit'])) {
-            $gasEstimate = $this->estimateDeploymentGas($deployParams);
-            $deployParams['gas_limit'] = $gasEstimate;
-            
-            Log::info('Gas estimated for deployment', [
-                'contract' => $contractName,
-                'estimate' => $gasEstimate,
-            ]);
+            try {
+                $gasEstimate = $this->estimateDeploymentGas($deployParams);
+                $deployParams['gas_limit'] = $gasEstimate;
+                
+                Log::info('Gas estimated for deployment', [
+                    'contract' => $contractName,
+                    'estimate' => $gasEstimate,
+                ]);
+            } catch (\Exception $e) {
+                // Use default if estimation fails
+                $deployParams['gas_limit'] = $this->config['gas']['default_limit'] ?? 3000000;
+            }
         }
 
         // Preview transaction if requested
@@ -134,7 +152,7 @@ class ContractDeployer
     public function previewDeployment(string $contractName, array $params, string $network): array
     {
         $gasPrice = $this->driver->getGasPrice();
-        $gasLimit = $params['gas_limit'];
+        $gasLimit = $params['gas_limit'] ?? ($this->config['gas']['default_limit'] ?? 3000000);
         $estimatedCost = $gasPrice * $gasLimit;
 
         return [

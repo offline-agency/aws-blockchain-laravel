@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\App;
 class RollbackContractCommand extends Command
 {
     protected $signature = 'blockchain:rollback {contract : Contract name or address}
-                            {--version= : Target version to rollback to}
+                            {--target-version= : Target version to rollback to}
                             {--from= : Address performing the rollback}
                             {--json : Output in JSON format}';
 
@@ -66,7 +66,7 @@ class RollbackContractCommand extends Command
             $options = ['from' => $this->option('from')];
 
             $this->info('Rolling back contract...');
-            $versionOption = $this->option('version');
+            $versionOption = $this->option('target-version');
             $targetVersion = is_string($versionOption) ? $versionOption : null;
             $result = $upgrader->rollback($contract, $targetVersion, $options);
 

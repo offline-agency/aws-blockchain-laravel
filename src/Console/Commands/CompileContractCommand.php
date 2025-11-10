@@ -11,7 +11,7 @@ class CompileContractCommand extends Command
 {
     protected $signature = 'blockchain:compile {source : Path to contract source file}
                             {name : Contract name}
-                            {--version=1.0.0 : Contract version}
+                            {--contract-version=1.0.0 : Contract version}
                             {--json : Output in JSON format}';
 
     protected $description = 'Compile a Solidity contract without deploying';
@@ -20,7 +20,7 @@ class CompileContractCommand extends Command
     {
         $source = $this->argument('source');
         $name = $this->argument('name');
-        $version = $this->option('version');
+        $version = $this->option('contract-version');
 
         if (! is_string($source)) {
             $this->error('Source path must be a string');

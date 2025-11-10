@@ -27,7 +27,7 @@ class DeployContractCommandTest extends TestCase
             '--preview' => true,
             '--json' => true,
         ])
-            ->expectsOutput(fn ($output) => str_contains($output, '"contract_name"'))
+            ->expectsOutputToContain('contract_name')
             ->assertSuccessful();
     }
 }

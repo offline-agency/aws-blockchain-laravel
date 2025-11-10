@@ -22,7 +22,7 @@ class CompileContractCommandTest extends TestCase
         $this->artisan('blockchain:compile', [
             'source' => '/non/existent/file.sol',
             'name' => 'TestContract',
-            '--version' => '2.0.0',
+            '--contract-version' => '2.0.0',
         ])
             ->assertFailed(); // Fails on file not found, but tests argument parsing
     }
