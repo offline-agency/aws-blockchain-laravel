@@ -212,7 +212,7 @@ class AbiEncoder
         }
 
         $value = (string) $value;
-        $length = strlen($value) / 2; // Length in bytes
+        $length = (int) (strlen($value) / 2); // Length in bytes
         $lengthHex = str_pad(dechex($length), 64, '0', STR_PAD_LEFT);
         $padded = str_pad($value, ((int) ceil($length / 32)) * 64, '0', STR_PAD_RIGHT);
 

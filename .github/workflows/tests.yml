@@ -45,9 +45,14 @@ jobs:
         composer require "laravel/framework:${{ matrix.laravel }}" --no-update
         composer install --prefer-dist --no-progress --no-interaction
         
+    - name: Verify Xdebug
+      run: php -m | grep -i xdebug || echo "Xdebug not found"
+      
     - name: Execute tests
+      env:
+        XDEBUG_MODE: coverage
       run: |
-        vendor/bin/pest --coverage --min=80 --coverage-clover=coverage.xml
+        vendor/bin/pest --coverage --min=80 --coverage-clover=coverage.xml --coverage-filter=src
         
     - name: Upload coverage to Codecov
       if: matrix.php == '8.3' && matrix.laravel == '11.*'

@@ -11,9 +11,11 @@ use Illuminate\Support\Facades\Log;
 
 class QldbDriver implements BlockchainDriverInterface
 {
-    protected QLDBClient $client;
+    /** @var QLDBClient|object */
+    protected $client;
 
-    protected QLDBSessionClient $sessionClient;
+    /** @var QLDBSessionClient|object */
+    protected $sessionClient;
 
     protected string $ledgerName;
 
@@ -37,6 +39,7 @@ class QldbDriver implements BlockchainDriverInterface
             ]);
         } else {
             // In test environments where AWS SDK is not available, create a mock-like object
+            /** @phpstan-ignore-next-line */
             $this->client = new class {
                 public function describeLedger(array $args): void
                 {
@@ -58,6 +61,7 @@ class QldbDriver implements BlockchainDriverInterface
             ]);
         } else {
             // In test environments where AWS SDK is not available, create a mock-like object
+            /** @phpstan-ignore-next-line */
             $this->sessionClient = new class {
                 public function sendCommand(array $args): void
                 {

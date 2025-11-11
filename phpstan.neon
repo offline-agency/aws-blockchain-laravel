@@ -60,6 +60,8 @@ parameters:
         - '#Strict comparison using !== between non-falsy-string and int will always#'
         - '#Strict comparison using !== between string and false will always#'
         - '#Call to function is_array\(\) with non-empty-array.*will always#'
+        - '#Call to an undefined method object::(sendCommand|describeLedger)\(\)#'
+        - '#Call to static method hash\(\) on an unknown class kornrunner\\Keccak#'
         -
             identifier: missingType.iterableValue
         -
