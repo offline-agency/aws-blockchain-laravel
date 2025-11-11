@@ -125,6 +125,7 @@ class WatchContractsCommandTest extends TestCase
 
         // Should handle files that can't be hashed
         $methodExecuted = false;
+
         try {
             $method->invoke($command, $paths, $config);
             $methodExecuted = true;
@@ -153,6 +154,7 @@ class WatchContractsCommandTest extends TestCase
 
         // Should not process .txt files
         $methodExecuted = false;
+
         try {
             $method->invoke($command, $paths, $config);
             $methodExecuted = true;

@@ -251,13 +251,13 @@ class ContractDeployerTest extends TestCase
     {
         // Mock the compiler to avoid dependency on solc
         $mockCompiler = \Mockery::mock(\AwsBlockchain\Laravel\Services\ContractCompiler::class);
-        
+
         // First, loadArtifacts will be called and return null (no pre-compiled artifacts)
         $mockCompiler->shouldReceive('loadArtifacts')
             ->once()
             ->with('TestContract', '1.0.0')
             ->andReturn(null);
-        
+
         // Then compile will be called (not compileFromSource)
         $mockCompiler->shouldReceive('compile')
             ->once()

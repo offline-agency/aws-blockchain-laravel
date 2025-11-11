@@ -9,10 +9,10 @@ use AwsBlockchain\Laravel\Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 /**
- * Comprehensive test suite to reach 98% code coverage
- * Covers edge cases and paths not tested elsewhere - Command Tests
+ * Integration tests for all command features and edge cases
+ * Covers command options, error handling, and JSON output
  */
-class Comprehensive98PercentCommandsTest extends TestCase
+class CommandsIntegrationTest extends TestCase
 {
     use RefreshDatabase;
 
