@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AwsBlockchain\Laravel\Tests\Unit\Drivers;
 
 use AwsBlockchain\Laravel\Drivers\EvmDriver;
+use AwsBlockchain\Laravel\Services\AbiEncoder;
+use AwsBlockchain\Laravel\Services\EthereumJsonRpcClient;
 use AwsBlockchain\Laravel\Tests\TestCase;
 use Mockery;
 
@@ -16,45 +18,22 @@ class EvmDriverTest extends TestCase
     {
         parent::setUp();
 
-        // Create a mock Web3 instance (works even if Web3 class doesn't exist)
-        $web3Mock = Mockery::mock('Web3\Web3');
-        $ethMock = Mockery::mock();
+        // Create mocks for RPC client and ABI encoder
+        $rpcClientMock = Mockery::mock(EthereumJsonRpcClient::class);
+        $abiEncoderMock = Mockery::mock(AbiEncoder::class);
 
-        // Mock the eth property and its methods
-        $web3Mock->eth = $ethMock;
-        $web3Mock->provider = Mockery::mock();
+        // Mock RPC client methods
+        $rpcClientMock->shouldReceive('eth_blockNumber')
+            ->andReturn('0x3039'); // 12345 in hex
 
-        // Mock blockNumber method
-        $blockNumberObj = new class
-        {
-            public function toString(): string
-            {
-                return '12345';
-            }
-        };
-        $ethMock->shouldReceive('blockNumber')
-            ->andReturnUsing(function ($callback) use ($blockNumberObj) {
-                $callback(null, $blockNumberObj);
-            });
-
-        // Mock chainId method
-        $chainIdObj = new class
-        {
-            public function toString(): string
-            {
-                return '1';
-            }
-        };
-        $ethMock->shouldReceive('chainId')
-            ->andReturnUsing(function ($callback) use ($chainIdObj) {
-                $callback(null, $chainIdObj);
-            });
+        $rpcClientMock->shouldReceive('eth_chainId')
+            ->andReturn('0x1'); // 1 in hex
 
         $this->driver = new EvmDriver([
             'network' => 'testnet',
             'rpc_url' => 'http://localhost:8545',
             'default_account' => '0x1234567890123456789012345678901234567890',
-        ], $web3Mock);
+        ], $rpcClientMock, $abiEncoderMock);
     }
 
     public function test_get_type_returns_evm(): void

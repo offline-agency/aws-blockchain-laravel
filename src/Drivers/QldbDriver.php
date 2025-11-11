@@ -24,23 +24,47 @@ class QldbDriver implements BlockchainDriverInterface
     {
         $this->ledgerName = $config['ledger_name'] ?? 'supply-chain-ledger';
 
-        $this->client = $client ?? new QLDBClient([
-            'version' => 'latest',
-            'region' => $config['region'] ?? 'us-east-1',
-            'credentials' => [
-                'key' => $config['access_key_id'],
-                'secret' => $config['secret_access_key'],
-            ],
-        ]);
+        if ($client !== null) {
+            $this->client = $client;
+        } elseif (class_exists(QLDBClient::class)) {
+            $this->client = new QLDBClient([
+                'version' => 'latest',
+                'region' => $config['region'] ?? 'us-east-1',
+                'credentials' => [
+                    'key' => $config['access_key_id'],
+                    'secret' => $config['secret_access_key'],
+                ],
+            ]);
+        } else {
+            // In test environments where AWS SDK is not available, create a mock-like object
+            $this->client = new class {
+                public function describeLedger(array $args): void
+                {
+                    throw new \RuntimeException('QLDB client not available in test environment');
+                }
+            };
+        }
 
-        $this->sessionClient = $sessionClient ?? new QLDBSessionClient([
-            'version' => 'latest',
-            'region' => $config['region'] ?? 'us-east-1',
-            'credentials' => [
-                'key' => $config['access_key_id'],
-                'secret' => $config['secret_access_key'],
-            ],
-        ]);
+        if ($sessionClient !== null) {
+            $this->sessionClient = $sessionClient;
+        } elseif (class_exists(QLDBSessionClient::class)) {
+            $this->sessionClient = new QLDBSessionClient([
+                'version' => 'latest',
+                'region' => $config['region'] ?? 'us-east-1',
+                'credentials' => [
+                    'key' => $config['access_key_id'],
+                    'secret' => $config['secret_access_key'],
+                ],
+            ]);
+        } else {
+            // In test environments where AWS SDK is not available, create a mock-like object
+            $this->sessionClient = new class {
+                public function sendCommand(array $args): void
+                {
+                    throw new \RuntimeException('QLDB session client not available in test environment');
+                }
+            };
+        }
     }
 
     /**
@@ -156,12 +180,21 @@ class QldbDriver implements BlockchainDriverInterface
     public function isAvailable(): bool
     {
         try {
+            // Try to call describeLedger - this works for both real clients and mocks
+            // Mocks will handle the call through Mockery's expectations
+            // Real clients will either succeed or throw an exception
             $this->client->describeLedger([
                 'Name' => $this->ledgerName,
             ]);
-
             return true;
         } catch (\Exception $e) {
+            Log::warning('QLDB not available', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        } catch (\Error $e) {
+            // Handle fatal errors (like method doesn't exist)
             Log::warning('QLDB not available', [
                 'error' => $e->getMessage(),
             ]);

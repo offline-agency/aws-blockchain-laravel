@@ -7,6 +7,7 @@ use AwsBlockchain\Laravel\Drivers\ManagedBlockchainDriver;
 use AwsBlockchain\Laravel\Drivers\MockDriver;
 use AwsBlockchain\Laravel\Drivers\QldbDriver;
 use AwsBlockchain\Laravel\Tests\TestCase;
+use Mockery;
 
 class BlockchainDriverInterfaceTest extends TestCase
 {
@@ -77,6 +78,14 @@ class BlockchainDriverInterfaceTest extends TestCase
 
     public function test_all_drivers_implement_interface()
     {
+        // Create mock QLDB clients
+        $qldbClientMock = Mockery::mock('Aws\QLDB\QLDBClient');
+        $qldbSessionClientMock = Mockery::mock('Aws\QLDBSession\QLDBSessionClient');
+        
+        // Mock describeLedger method
+        $qldbClientMock->shouldReceive('describeLedger')
+            ->andReturn(Mockery::mock('Aws\Result'));
+        
         $drivers = [
             new MockDriver('test'),
             new ManagedBlockchainDriver([
@@ -90,7 +99,7 @@ class BlockchainDriverInterfaceTest extends TestCase
                 'access_key_id' => 'test',
                 'secret_access_key' => 'test',
                 'ledger_name' => 'test',
-            ]),
+            ], $qldbClientMock, $qldbSessionClientMock),
         ];
 
         foreach ($drivers as $driver) {

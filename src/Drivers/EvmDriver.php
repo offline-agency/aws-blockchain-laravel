@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace AwsBlockchain\Laravel\Drivers;
 
 use AwsBlockchain\Laravel\Contracts\BlockchainDriverInterface;
-use Web3\Contract;
-use Web3\Web3;
+use AwsBlockchain\Laravel\Services\AbiEncoder;
+use AwsBlockchain\Laravel\Services\EthereumJsonRpcClient;
 
 class EvmDriver implements BlockchainDriverInterface
 {
-    protected Web3 $web3;
+    protected EthereumJsonRpcClient $rpcClient;
+
+    protected AbiEncoder $abiEncoder;
 
     protected string $network;
 
@@ -22,17 +24,16 @@ class EvmDriver implements BlockchainDriverInterface
     /**
      * @param  array<string, mixed>  $config
      */
-    public function __construct(array $config, ?Web3 $web3 = null)
-    {
+    public function __construct(
+        array $config,
+        ?EthereumJsonRpcClient $rpcClient = null,
+        ?AbiEncoder $abiEncoder = null
+    ) {
         $this->config = $config;
         $this->network = $config['network'] ?? 'mainnet';
 
-        if ($web3 !== null) {
-            $this->web3 = $web3;
-        } else {
-            $provider = $config['rpc_url'] ?? 'http://localhost:8545';
-            $this->web3 = new Web3($provider);
-        }
+        $this->rpcClient = $rpcClient ?? new EthereumJsonRpcClient($config);
+        $this->abiEncoder = $abiEncoder ?? new AbiEncoder();
 
         $this->defaultAccount = $config['default_account'] ?? null;
     }
@@ -81,10 +82,7 @@ class EvmDriver implements BlockchainDriverInterface
     public function isAvailable(): bool
     {
         try {
-            $this->web3->eth->blockNumber(function ($err, $blockNumber) {
-                return $err === null;
-            });
-
+            $this->rpcClient->eth_blockNumber();
             return true;
         } catch (\Exception $e) {
             return false;
@@ -110,17 +108,15 @@ class EvmDriver implements BlockchainDriverInterface
         $chainId = null;
 
         try {
-            $this->web3->eth->blockNumber(function ($err, $result) use (&$blockNumber) {
-                if (! $err) {
-                    $blockNumber = $result->toString();
-                }
-            });
+            $blockNumberHex = $this->rpcClient->eth_blockNumber();
+            $blockNumber = $this->hexToDec($blockNumberHex);
+        } catch (\Exception $e) {
+            // Silently fail
+        }
 
-            $this->web3->eth->chainId(function ($err, $result) use (&$chainId) {
-                if (! $err) {
-                    $chainId = $result->toString();
-                }
-            });
+        try {
+            $chainIdHex = $this->rpcClient->eth_chainId();
+            $chainId = $this->hexToDec($chainIdHex);
         } catch (\Exception $e) {
             // Silently fail
         }
@@ -129,8 +125,8 @@ class EvmDriver implements BlockchainDriverInterface
             'type' => 'evm',
             'network' => $this->network,
             'rpc_url' => $this->config['rpc_url'] ?? 'unknown',
-            'block_number' => $blockNumber,
-            'chain_id' => $chainId,
+            'block_number' => $blockNumber !== null ? (string) $blockNumber : null,
+            'chain_id' => $chainId !== null ? (string) $chainId : null,
             'default_account' => $this->defaultAccount,
         ];
     }
@@ -152,44 +148,60 @@ class EvmDriver implements BlockchainDriverInterface
             throw new \InvalidArgumentException('From address is required for contract deployment');
         }
 
-        $contract = new Contract($this->web3->provider, $abi);
+        // Parse ABI to find constructor
+        $abiArray = is_string($abi) ? json_decode($abi, true) : $abi;
+        if (! is_array($abiArray)) {
+            $abiArray = [];
+        }
 
-        $transactionHash = null;
-        $contractAddress = null;
-        $gasUsed = null;
+        $constructorAbi = null;
+        foreach ($abiArray as $item) {
+            if (is_array($item) && ($item['type'] ?? '') === 'constructor') {
+                $constructorAbi = $item;
+                break;
+            }
+        }
 
-        // Deploy contract
-        $options = [
+        // Encode constructor call
+        $data = $this->abiEncoder->encodeConstructorCall($constructorParams, $constructorAbi, $bytecode);
+
+        // Build transaction
+        $transaction = [
             'from' => $from,
-            'gas' => $params['gas_limit'] ?? '3000000',
+            'data' => $data,
+            'gas' => $params['gas_limit'] ?? 3000000,
         ];
 
-        $callback = function ($err, $result) use (&$transactionHash, &$contractAddress, &$gasUsed) {
-            if ($err !== null) {
-                throw new \RuntimeException('Contract deployment failed: '.$err->getMessage());
+        // Estimate gas if not provided
+        if (! isset($params['gas_limit'])) {
+            try {
+                $gasEstimate = $this->rpcClient->eth_estimateGas($transaction);
+                $transaction['gas'] = $this->hexToDec($gasEstimate);
+            } catch (\Exception $e) {
+                // Use default if estimation fails
             }
+        }
 
-            if (is_string($result)) {
-                $transactionHash = $result;
-            } elseif (isset($result->contractAddress)) {
-                $contractAddress = $result->contractAddress;
-                $gasUsed = isset($result->gasUsed) ? hexdec($result->gasUsed) : null;
-            }
-        };
+        // Send transaction
+        $transactionHash = $this->rpcClient->eth_sendTransaction($transaction);
 
-        // Call new() with constructor params, then options, then callback
-        // Merge all arguments to avoid "positional argument after unpacking" error in PHP 8.0+
-        $contractInstance = $contract->bytecode($bytecode);
-        $newArgs = array_merge($constructorParams, [$options, $callback]);
-        $contractInstance->new(...$newArgs);
+        // Wait for receipt to get contract address
+        $contractAddress = null;
+        $gasUsed = null;
+        $maxAttempts = 10;
+        $attempt = 0;
 
-        // Wait for transaction receipt to get contract address
-        if ($transactionHash && ! $contractAddress) {
+        while ($attempt < $maxAttempts) {
+            sleep(1);
             $receipt = $this->getTransactionReceipt($transactionHash);
-            if ($receipt) {
+            if ($receipt !== null) {
                 $contractAddress = $receipt['contractAddress'] ?? null;
                 $gasUsed = $receipt['gasUsed'] ?? null;
+                if ($contractAddress !== null) {
+                    break;
+                }
             }
+            $attempt++;
         }
 
         return [
@@ -207,23 +219,44 @@ class EvmDriver implements BlockchainDriverInterface
      */
     public function callContract(string $address, string $abi, string $method, array $params = []): mixed
     {
-        $contract = new Contract($this->web3->provider, $abi);
-        $contract->at($address);
+        // Parse ABI to find method
+        $abiArray = json_decode($abi, true);
+        if (! is_array($abiArray)) {
+            throw new \InvalidArgumentException('Invalid ABI format: must be valid JSON array');
+        }
 
-        $result = null;
-
-        $callback = function ($err, $response) use (&$result) {
-            if ($err !== null) {
-                throw new \RuntimeException('Contract call failed: '.$err->getMessage());
+        $methodAbi = null;
+        foreach ($abiArray as $item) {
+            if (is_array($item) &&
+                ($item['type'] ?? '') === 'function' &&
+                ($item['name'] ?? '') === $method) {
+                $methodAbi = $item;
+                break;
             }
-            $result = $response;
-        };
+        }
 
-        // Build arguments array: method name, then params, then callback
-        $callArgs = array_merge([$method], $params, [$callback]);
-        $contract->call(...$callArgs);
+        if ($methodAbi === null) {
+            throw new \InvalidArgumentException("Method '{$method}' not found in ABI");
+        }
 
-        return $result;
+        // Encode function call
+        $data = $this->abiEncoder->encodeFunctionCall($method, $params, $methodAbi);
+
+        // Build transaction for eth_call
+        $transaction = [
+            'to' => $address,
+            'data' => $data,
+        ];
+
+        // Call contract method
+        $resultHex = $this->rpcClient->eth_call($transaction);
+
+        // Decode result
+        if (! empty($methodAbi['outputs'] ?? [])) {
+            return $this->abiEncoder->decodeFunctionResult($resultHex, $methodAbi['outputs']);
+        }
+
+        return $resultHex;
     }
 
     /**
@@ -233,17 +266,8 @@ class EvmDriver implements BlockchainDriverInterface
      */
     public function estimateGas(array $transaction): int
     {
-        $gas = 0;
-
-        $this->web3->eth->estimateGas($transaction, function ($err, $result) use (&$gas) {
-            if ($err !== null) {
-                throw new \RuntimeException('Gas estimation failed: '.$err->getMessage());
-            }
-
-            $gas = is_object($result) ? (int) $result->toString() : (int) $result;
-        });
-
-        return $gas;
+        $gasHex = $this->rpcClient->eth_estimateGas($transaction);
+        return $this->hexToDec($gasHex);
     }
 
     /**
@@ -253,25 +277,7 @@ class EvmDriver implements BlockchainDriverInterface
      */
     public function getTransactionReceipt(string $hash): ?array
     {
-        $receipt = null;
-
-        $this->web3->eth->getTransactionReceipt($hash, function ($err, $result) use (&$receipt, $hash) {
-            if ($err !== null || $result === null) {
-                return;
-            }
-
-            $receipt = [
-                'transactionHash' => $result->transactionHash ?? $hash,
-                'blockNumber' => isset($result->blockNumber) ? hexdec($result->blockNumber) : null,
-                'contractAddress' => $result->contractAddress ?? null,
-                'gasUsed' => isset($result->gasUsed) ? hexdec($result->gasUsed) : null,
-                'status' => isset($result->status) ? (hexdec($result->status) === 1) : true,
-                'from' => $result->from ?? null,
-                'to' => $result->to ?? null,
-            ];
-        });
-
-        return $receipt;
+        return $this->rpcClient->eth_getTransactionReceipt($hash);
     }
 
     /**
@@ -279,17 +285,8 @@ class EvmDriver implements BlockchainDriverInterface
      */
     public function getGasPrice(): int
     {
-        $gasPrice = 0;
-
-        $this->web3->eth->gasPrice(function ($err, $result) use (&$gasPrice) {
-            if ($err !== null) {
-                throw new \RuntimeException('Failed to get gas price: '.$err->getMessage());
-            }
-
-            $gasPrice = is_object($result) ? (int) $result->toString() : (int) $result;
-        });
-
-        return $gasPrice;
+        $gasPriceHex = $this->rpcClient->eth_gasPrice();
+        return $this->hexToDec($gasPriceHex);
     }
 
     /**
@@ -299,17 +296,7 @@ class EvmDriver implements BlockchainDriverInterface
      */
     public function sendTransaction(array $transaction): string
     {
-        $transactionHash = null;
-
-        $this->web3->eth->sendTransaction($transaction, function ($err, $result) use (&$transactionHash) {
-            if ($err !== null) {
-                throw new \RuntimeException('Transaction failed: '.$err->getMessage());
-            }
-
-            $transactionHash = $result;
-        });
-
-        return $transactionHash ?? '';
+        return $this->rpcClient->eth_sendTransaction($transaction);
     }
 
     /**
@@ -317,16 +304,18 @@ class EvmDriver implements BlockchainDriverInterface
      */
     public function getBalance(string $address): string
     {
-        $balance = '0';
+        return $this->rpcClient->eth_getBalance($address);
+    }
 
-        $this->web3->eth->getBalance($address, 'latest', function ($err, $result) use (&$balance) {
-            if ($err !== null) {
-                throw new \RuntimeException('Failed to get balance: '.$err->getMessage());
-            }
+    /**
+     * Convert hex string to decimal integer
+     */
+    protected function hexToDec(string $hex): int
+    {
+        if (str_starts_with($hex, '0x')) {
+            $hex = substr($hex, 2);
+        }
 
-            $balance = is_object($result) ? $result->toString() : (string) $result;
-        });
-
-        return $balance;
+        return (int) hexdec($hex);
     }
 }
