@@ -64,7 +64,7 @@ class CompileContractCommandTest extends TestCase
                 'source' => $tempFile,
                 'name' => 'TestContract',
             ]);
-            
+
             // If we get here, the command executed (may have failed, but that's ok)
             $this->assertTrue(true);
         } catch (\Exception $e) {

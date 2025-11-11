@@ -26,7 +26,6 @@ class EthereumJsonRpcClient
      * Make a JSON-RPC call
      *
      * @param  array<int, mixed>  $params
-     * @return mixed
      */
     protected function call(string $method, array $params = []): mixed
     {
@@ -51,6 +50,7 @@ class EthereumJsonRpcClient
 
             if (isset($data['error'])) {
                 $error = $data['error'];
+
                 throw new \RuntimeException(
                     "RPC error [{$error['code']}]: {$error['message']}"
                 );
@@ -195,4 +195,3 @@ class EthereumJsonRpcClient
         return $this->call('eth_call', [$transaction, $block]);
     }
 }
-

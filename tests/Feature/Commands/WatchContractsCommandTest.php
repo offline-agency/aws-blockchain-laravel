@@ -10,7 +10,6 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
 use ReflectionClass;
-use ReflectionMethod;
 
 class WatchContractsCommandTest extends TestCase
 {
@@ -146,4 +145,3 @@ class WatchContractsCommandTest extends TestCase
         $this->assertTrue(true);
     }
 }
-

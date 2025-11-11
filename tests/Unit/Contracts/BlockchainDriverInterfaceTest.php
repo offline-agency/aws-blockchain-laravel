@@ -81,11 +81,11 @@ class BlockchainDriverInterfaceTest extends TestCase
         // Create mock QLDB clients
         $qldbClientMock = Mockery::mock('Aws\QLDB\QLDBClient');
         $qldbSessionClientMock = Mockery::mock('Aws\QLDBSession\QLDBSessionClient');
-        
+
         // Mock describeLedger method
         $qldbClientMock->shouldReceive('describeLedger')
             ->andReturn(Mockery::mock('Aws\Result'));
-        
+
         $drivers = [
             new MockDriver('test'),
             new ManagedBlockchainDriver([

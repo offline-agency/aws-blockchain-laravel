@@ -40,7 +40,8 @@ class QldbDriver implements BlockchainDriverInterface
         } else {
             // In test environments where AWS SDK is not available, create a mock-like object
             /** @phpstan-ignore-next-line */
-            $this->client = new class {
+            $this->client = new class
+            {
                 public function describeLedger(array $args): void
                 {
                     throw new \RuntimeException('QLDB client not available in test environment');
@@ -62,7 +63,8 @@ class QldbDriver implements BlockchainDriverInterface
         } else {
             // In test environments where AWS SDK is not available, create a mock-like object
             /** @phpstan-ignore-next-line */
-            $this->sessionClient = new class {
+            $this->sessionClient = new class
+            {
                 public function sendCommand(array $args): void
                 {
                     throw new \RuntimeException('QLDB session client not available in test environment');
@@ -190,6 +192,7 @@ class QldbDriver implements BlockchainDriverInterface
             $this->client->describeLedger([
                 'Name' => $this->ledgerName,
             ]);
+
             return true;
         } catch (\Exception $e) {
             Log::warning('QLDB not available', [

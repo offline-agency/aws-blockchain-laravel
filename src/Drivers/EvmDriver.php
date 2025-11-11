@@ -33,7 +33,7 @@ class EvmDriver implements BlockchainDriverInterface
         $this->network = $config['network'] ?? 'mainnet';
 
         $this->rpcClient = $rpcClient ?? new EthereumJsonRpcClient($config);
-        $this->abiEncoder = $abiEncoder ?? new AbiEncoder();
+        $this->abiEncoder = $abiEncoder ?? new AbiEncoder;
 
         $this->defaultAccount = $config['default_account'] ?? null;
     }
@@ -83,6 +83,7 @@ class EvmDriver implements BlockchainDriverInterface
     {
         try {
             $this->rpcClient->eth_blockNumber();
+
             return true;
         } catch (\Exception $e) {
             return false;
@@ -158,6 +159,7 @@ class EvmDriver implements BlockchainDriverInterface
         foreach ($abiArray as $item) {
             if (is_array($item) && ($item['type'] ?? '') === 'constructor') {
                 $constructorAbi = $item;
+
                 break;
             }
         }
@@ -231,6 +233,7 @@ class EvmDriver implements BlockchainDriverInterface
                 ($item['type'] ?? '') === 'function' &&
                 ($item['name'] ?? '') === $method) {
                 $methodAbi = $item;
+
                 break;
             }
         }
@@ -267,6 +270,7 @@ class EvmDriver implements BlockchainDriverInterface
     public function estimateGas(array $transaction): int
     {
         $gasHex = $this->rpcClient->eth_estimateGas($transaction);
+
         return $this->hexToDec($gasHex);
     }
 
@@ -286,6 +290,7 @@ class EvmDriver implements BlockchainDriverInterface
     public function getGasPrice(): int
     {
         $gasPriceHex = $this->rpcClient->eth_gasPrice();
+
         return $this->hexToDec($gasPriceHex);
     }
 

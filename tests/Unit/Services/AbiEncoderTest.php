@@ -15,7 +15,7 @@ class AbiEncoderTest extends TestCase
     {
         parent::setUp();
 
-        $this->encoder = new AbiEncoder();
+        $this->encoder = new AbiEncoder;
     }
 
     public function test_get_function_selector(): void
@@ -450,4 +450,3 @@ class AbiEncoderTest extends TestCase
         $this->assertStringStartsWith('0x', $encoded);
     }
 }
-

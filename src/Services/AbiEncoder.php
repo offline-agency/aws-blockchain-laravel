@@ -103,6 +103,7 @@ class AbiEncoder
         // Handle uint/int types
         if (preg_match('/^u?int(\d+)?$/', $type, $matches)) {
             $bits = isset($matches[1]) ? (int) $matches[1] : 256;
+
             return $this->encodeUint($value, $bits);
         }
 
@@ -119,6 +120,7 @@ class AbiEncoder
         // Handle bytes (fixed size)
         if (preg_match('/^bytes(\d+)$/', $type, $matches)) {
             $size = (int) $matches[1];
+
             return $this->encodeBytes($value, $size);
         }
 
@@ -135,6 +137,7 @@ class AbiEncoder
         // Handle arrays (basic support)
         if (str_ends_with($type, '[]')) {
             $baseType = substr($type, 0, -2);
+
             return $this->encodeArray($value, $baseType);
         }
 
@@ -297,6 +300,7 @@ class AbiEncoder
         // Handle address
         if ($type === 'address') {
             $hex = substr($data, 24, 40); // Last 20 bytes (40 hex chars)
+
             return '0x'.$hex;
         }
 
@@ -314,6 +318,7 @@ class AbiEncoder
         if ($type === 'string') {
             $length = $this->hexToDec('0x'.substr($data, 0, 64));
             $hex = substr($data, 64, $length * 2);
+
             return hex2bin($hex) ?: '';
         }
 
@@ -333,4 +338,3 @@ class AbiEncoder
         return (int) hexdec($hex);
     }
 }
-
