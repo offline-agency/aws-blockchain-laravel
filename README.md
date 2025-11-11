@@ -10,11 +10,12 @@ A comprehensive Laravel package for AWS blockchain integration, specifically des
 ## Features
 
 - **Multiple Blockchain Drivers**: Support for EVM (Ethereum), AWS Managed Blockchain, Amazon QLDB, and Mock drivers
+- **Direct JSON-RPC Implementation**: Native Ethereum JSON-RPC client without external Web3 dependencies
 - **Dual Blockchain Architecture**: Separate public and private blockchain operations
 - **Smart Contract Management**: Complete lifecycle management with Artisan commands
 - **Data Separation**: Automatic categorization of public vs private data
 - **Laravel Integration**: Seamless integration with Laravel's service container
-- **Testing Support**: Mock drivers for testing without AWS credentials
+- **Testing Support**: Mock drivers for testing without AWS credentials (90%+ code coverage)
 - **Hot Reload**: Watch contract files and auto-redeploy during development
 - **Gas Estimation**: Automatic gas estimation and transaction preview
 - **Contract Upgrades**: Support for upgradeable contracts with rollback capability
@@ -36,6 +37,12 @@ return [
     'drivers' => [
         'mock' => [
             'type' => 'mock',
+        ],
+        'evm' => [
+            'type' => 'evm',
+            'network' => env('BLOCKCHAIN_EVM_NETWORK', 'mainnet'),
+            'rpc_url' => env('BLOCKCHAIN_EVM_RPC_URL', 'http://localhost:8545'),
+            'default_account' => env('BLOCKCHAIN_EVM_DEFAULT_ACCOUNT'),
         ],
         'managed_blockchain' => [
             'type' => 'managed_blockchain',
@@ -103,6 +110,24 @@ Perfect for testing and development. Stores events in memory and provides simula
 $driver = new \AwsBlockchain\Laravel\Drivers\MockDriver('mock');
 ```
 
+### EvmDriver
+
+Ethereum Virtual Machine (EVM) compatible blockchain driver. Supports Ethereum, Polygon, BSC, and other EVM-compatible networks. Uses direct JSON-RPC communication without external Web3 dependencies.
+
+```php
+$driver = new \AwsBlockchain\Laravel\Drivers\EvmDriver([
+    'network' => 'mainnet',
+    'rpc_url' => 'https://mainnet.infura.io/v3/YOUR-PROJECT-ID',
+    'default_account' => '0x...',
+]);
+```
+
+Features:
+- Direct JSON-RPC implementation (no external Web3 library)
+- Smart contract deployment and interaction
+- Gas estimation and transaction management
+- ABI encoding/decoding support
+
 ### ManagedBlockchainDriver
 
 Integrates with AWS Managed Blockchain service for production blockchain operations.
@@ -118,6 +143,8 @@ Uses Amazon QLDB for immutable, cryptographically verifiable transaction logs.
 ```php
 $driver = new \AwsBlockchain\Laravel\Drivers\QldbDriver($config);
 ```
+
+Note: QLDB is a ledger database, not an EVM-compatible blockchain. Smart contract operations are not supported with QLDB.
 
 ## Data Separation
 
@@ -148,9 +175,21 @@ $this->app->bind('blockchain.public', function () {
 
 ## Smart Contract Management
 
-The package provides comprehensive Artisan commands for managing smart contract deployment and interactions.
+The package provides comprehensive Artisan commands for deploying and managing smart contracts on both EVM (Ethereum) and Hyperledger Fabric blockchains.
 
-### Deploy a Contract
+### Installation & Setup
+
+Publish the configuration and migrations:
+
+```bash
+php artisan vendor:publish --tag=aws-blockchain-laravel-config
+php artisan vendor:publish --tag=aws-blockchain-laravel-migrations
+php artisan migrate
+```
+
+### Available Commands
+
+#### Deploy a Contract
 
 Deploy a new smart contract with automatic gas estimation:
 
@@ -168,13 +207,13 @@ Options:
 - `--network`: Target network (mainnet, sepolia, local, fabric)
 - `--from`: Deployer address
 - `--source`: Path to Solidity source file
-- `--version`: Contract version (default: 1.0.0)
+- `--contract-version`: Contract version (default: 1.0.0)
 - `--verify`: Verify on block explorer after deployment
 - `--preview`: Preview deployment without executing
 - `--gas-limit`: Manual gas limit
 - `--json`: Output in JSON format for CI/CD
 
-### Upgrade a Contract
+#### Upgrade a Contract
 
 Upgrade an existing upgradeable contract:
 
@@ -192,7 +231,7 @@ Options:
 - `--from`: Address performing the upgrade
 - `--json`: JSON output
 
-### Call a Contract Method
+#### Call a Contract Method
 
 Interact with deployed contracts:
 
@@ -210,7 +249,7 @@ Options:
 - `--gas-limit`: Manual gas limit
 - `--json`: JSON output
 
-### Test a Contract
+#### Test a Contract
 
 Deploy and test a contract on a test network:
 
@@ -226,17 +265,15 @@ Options:
 - `--source`: Contract source file
 - `--json`: JSON output
 
-### Additional Commands
-
 #### Compile a Contract
 
 Compile Solidity without deploying:
 
 ```bash
-php artisan blockchain:compile contracts/MyContract.sol MyContract --version=1.0.0
+php artisan blockchain:compile contracts/MyContract.sol MyContract --contract-version=1.0.0
 ```
 
-#### List All Contracts
+#### List Contracts
 
 View all deployed contracts:
 
@@ -265,7 +302,7 @@ php artisan blockchain:verify MyContract --network=mainnet
 Rollback to a previous version:
 
 ```bash
-php artisan blockchain:rollback MyContract --version=1.0.0
+php artisan blockchain:rollback MyContract --target-version=1.0.0
 ```
 
 #### Watch Contracts (Hot Reload)
@@ -322,155 +359,19 @@ BLOCKCHAIN_CHAINCODE_NAME=supply-chain
 
 # QLDB Settings
 AWS_QLDB_LEDGER_NAME=supply-chain-ledger
-```
 
-## Smart Contract Management
+# EVM Network RPC URLs
+BLOCKCHAIN_MAINNET_RPC=https://mainnet.infura.io/v3/YOUR-PROJECT-ID
+BLOCKCHAIN_SEPOLIA_RPC=https://sepolia.infura.io/v3/YOUR-PROJECT-ID
+BLOCKCHAIN_LOCAL_RPC=http://localhost:8545
 
-The package provides comprehensive Artisan commands for deploying and managing smart contracts on both EVM (Ethereum) and Hyperledger Fabric blockchains.
+# EVM Settings
+BLOCKCHAIN_EVM_NETWORK=mainnet
+BLOCKCHAIN_EVM_RPC_URL=https://mainnet.infura.io/v3/YOUR-PROJECT-ID
+BLOCKCHAIN_EVM_DEFAULT_ACCOUNT=0x...
 
-### Installation & Setup
-
-Publish the configuration and migrations:
-
-```bash
-php artisan vendor:publish --tag=aws-blockchain-laravel-config
-php artisan vendor:publish --tag=aws-blockchain-laravel-migrations
-php artisan migrate
-```
-
-### Available Commands
-
-#### Deploy Contract
-
-Deploy a new smart contract to the blockchain:
-
-```bash
-php artisan blockchain:deploy MyContract \
-    --constructor="constructor(uint256 initialSupply)" \
-    --params="1000000" \
-    --network=local \
-    --verify
-```
-
-Options:
-- `--constructor`: Constructor signature (optional)
-- `--params`: Constructor parameters (JSON or comma-separated)
-- `--network`: Target network (mainnet, sepolia, local, fabric)
-- `--from`: Deployer address
-- `--source`: Path to contract source file
-- `--version`: Contract version (default: 1.0.0)
-- `--verify`: Verify contract on block explorer
-- `--preview`: Preview deployment without executing
-- `--gas-limit`: Custom gas limit
-- `--json`: Output in JSON format for CI/CD
-
-#### Upgrade Contract
-
-Upgrade an existing upgradeable contract:
-
-```bash
-php artisan blockchain:upgrade MyContract@v2 \
-    --preserve-state \
-    --migration=update_contract_v2
-```
-
-Options:
-- `--preserve-state`: Preserve contract state during upgrade
-- `--migration`: Migration script to run
-- `--source`: Path to new contract source
-- `--from`: Address performing the upgrade
-- `--network`: Network the contract is on
-- `--json`: JSON output
-
-#### Call Contract Method
-
-Interact with a deployed contract:
-
-```bash
-php artisan blockchain:call MyContract getBalance \
-    --params="0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
-```
-
-Options:
-- `--params`: Method parameters (JSON or comma-separated)
-- `--from`: Sender address (for transactions)
-- `--network`: Network filter
-- `--wait`: Wait for transaction confirmation
-- `--gas-limit`: Custom gas limit
-- `--json`: JSON output
-
-#### Test Contract
-
-Test a contract on a test network:
-
-```bash
-php artisan blockchain:test MyContract \
-    --network=sepolia \
-    --coverage
-```
-
-Options:
-- `--network`: Test network (default: local)
-- `--coverage`: Generate code coverage report
-- `--source`: Path to contract source
-- `--json`: JSON output
-
-#### Compile Contract
-
-Compile a Solidity contract without deploying:
-
-```bash
-php artisan blockchain:compile contracts/MyContract.sol MyContract \
-    --version=1.0.0
-```
-
-#### List Contracts
-
-List all deployed contracts:
-
-```bash
-php artisan blockchain:list \
-    --network=mainnet \
-    --status=deployed \
-    --json
-```
-
-#### Contract Status
-
-Show detailed information about a contract:
-
-```bash
-php artisan blockchain:status MyContract \
-    --network=mainnet
-```
-
-#### Verify Contract
-
-Verify contract source code on block explorer:
-
-```bash
-php artisan blockchain:verify MyContract \
-    --network=mainnet
-```
-
-#### Rollback Contract
-
-Rollback an upgradeable contract to a previous version:
-
-```bash
-php artisan blockchain:rollback MyContract \
-    --version=1.0.0 \
-    --from=0x...
-```
-
-#### Watch Contracts (Hot Reload)
-
-Watch contract files for changes and auto-redeploy:
-
-```bash
-php artisan blockchain:watch \
-    --network=local \
-    --interval=1000
+# Block Explorer API Keys
+ETHERSCAN_API_KEY=your_etherscan_api_key
 ```
 
 ### Contract Configuration
@@ -494,7 +395,7 @@ Configure networks, compiler settings, and gas options in `config/aws-blockchain
         ],
         'local' => [
             'type' => 'evm',
-            'rpc_url' => 'http://localhost:8545',
+            'rpc_url' => env('BLOCKCHAIN_LOCAL_RPC', 'http://localhost:8545'),
             'chain_id' => 1337,
         ],
         'fabric' => [
@@ -563,22 +464,8 @@ php artisan blockchain:deploy MyContract --upgradeable
 php artisan blockchain:upgrade MyContract@v2 --preserve-state
 
 # Rollback if needed
-php artisan blockchain:rollback MyContract
+php artisan blockchain:rollback MyContract --target-version=1.0.0
 ```
-
-#### CI/CD Integration
-
-All commands support JSON output for CI/CD pipelines:
-
-```bash
-php artisan blockchain:deploy MyContract --json
-php artisan blockchain:test MyContract --json
-php artisan blockchain:verify MyContract --json
-```
-
-Exit codes:
-- `0`: Success
-- `1`: Failure
 
 ### Contract Storage
 
