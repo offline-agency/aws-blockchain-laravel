@@ -286,6 +286,96 @@ class ContractInteractorTest extends TestCase
         $this->assertNotNull($result);
     }
 
+    public function test_call_with_state_changing_method_and_wait_false(): void
+    {
+        $contract = BlockchainContract::create([
+            'name' => 'TestContract',
+            'version' => '1.0.0',
+            'type' => 'evm',
+            'address' => '0x1234567890123456789012345678901234567890',
+            'network' => 'local',
+            'abi' => json_encode([
+                [
+                    'type' => 'function',
+                    'name' => 'mint',
+                    'stateMutability' => 'nonpayable',
+                    'inputs' => [['type' => 'uint256']],
+                ],
+            ]),
+        ]);
+
+        $result = $this->interactor->call($contract, 'mint', [1000], ['wait' => false]);
+        $this->assertNotNull($result);
+    }
+
+    public function test_call_with_from_address_option(): void
+    {
+        $contract = $this->createTestContract();
+
+        $result = $this->interactor->call(
+            $contract,
+            'transfer',
+            ['0x0987654321098765432109876543210987654321', 1000],
+            ['from' => '0x1111111111111111111111111111111111111111']
+        );
+
+        $this->assertNotNull($result);
+    }
+
+    public function test_call_with_gas_limit_option(): void
+    {
+        $contract = $this->createTestContract();
+
+        $result = $this->interactor->call(
+            $contract,
+            'transfer',
+            ['0x0987654321098765432109876543210987654321', 1000],
+            ['gas_limit' => 100000]
+        );
+
+        $this->assertNotNull($result);
+    }
+
+    public function test_wait_for_confirmation_with_successful_receipt(): void
+    {
+        $mockDriver = \Mockery::mock($this->driver)->makePartial();
+        $mockDriver->shouldReceive('getTransactionReceipt')
+            ->once()
+            ->andReturn([
+                'transactionHash' => '0xtest',
+                'blockNumber' => 12345,
+                'status' => true,
+            ]);
+
+        $interactor = new ContractInteractor($mockDriver, [
+            'gas' => [
+                'default_limit' => 100000,
+                'price_multiplier' => 1.1,
+            ],
+        ]);
+        $receipt = $interactor->waitForConfirmation('0xtest', 10);
+
+        $this->assertNotNull($receipt);
+        $this->assertEquals('0xtest', $receipt['transactionHash']);
+    }
+
+    public function test_parse_parameters_with_numeric_string(): void
+    {
+        $params = $this->interactor->parseParameters('1000');
+        $this->assertIsArray($params);
+        $this->assertCount(1, $params);
+    }
+
+    public function test_format_return_value_with_boolean_true(): void
+    {
+        $this->assertEquals('true', $this->interactor->formatReturnValue(true));
+    }
+
+    public function test_format_return_value_with_boolean_false(): void
+    {
+        $this->assertEquals('false', $this->interactor->formatReturnValue(false));
+    }
+
     protected function createTestContract(): BlockchainContract
     {
         return BlockchainContract::create([

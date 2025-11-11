@@ -381,14 +381,7 @@ class EthereumJsonRpcClientTest extends TestCase
         $this->client->eth_blockNumber();
     }
 
-    public function test_handles_network_exception(): void
-    {
-        // Test that RequestException is caught and wrapped
-        // We can't easily simulate a RequestException with Http::fake(),
-        // but we can test that the error handling code path exists
-        // The actual RequestException handling is tested implicitly through HTTP errors
-        $this->assertTrue(true); // Placeholder - RequestException handling is tested via HTTP error test
-    }
+    // RequestException handling is tested via the test_handles_http_error test above
 
     public function test_handles_missing_result(): void
     {

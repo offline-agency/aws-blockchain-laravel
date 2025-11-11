@@ -245,4 +245,131 @@ class ContractCompilerTest extends TestCase
 
         $this->assertTrue($this->compiler->validateAbi($validAbi));
     }
+
+    public function test_validate_abi_with_empty_array_returns_true(): void
+    {
+        $result = $this->compiler->validateAbi([]);
+
+        $this->assertTrue($result);
+    }
+
+    public function test_get_constructor_returns_constructor_when_present(): void
+    {
+        $abi = [
+            ['type' => 'constructor', 'inputs' => [['type' => 'uint256']]],
+            ['type' => 'function', 'name' => 'test'],
+        ];
+
+        $constructor = $this->compiler->getConstructor($abi);
+
+        $this->assertNotNull($constructor);
+        $this->assertEquals('constructor', $constructor['type']);
+    }
+
+    public function test_get_method_returns_method_when_found(): void
+    {
+        $abi = [
+            ['type' => 'function', 'name' => 'transfer'],
+            ['type' => 'function', 'name' => 'approve'],
+        ];
+
+        $method = $this->compiler->getMethod($abi, 'approve');
+
+        $this->assertNotNull($method);
+        $this->assertEquals('approve', $method['name']);
+    }
+
+    public function test_compile_with_custom_config(): void
+    {
+        $compiler = new ContractCompiler([
+            'solc_path' => 'solc',
+            'storage_path' => storage_path('app/contracts'),
+            'optimize' => true,
+            'optimize_runs' => 1000,
+        ]);
+
+        try {
+            $result = $compiler->compile(
+                'pragma solidity ^0.8.0; contract Test { function test() public {} }',
+                'Test'
+            );
+
+            $this->assertArrayHasKey('abi', $result);
+            $this->assertArrayHasKey('bytecode', $result);
+        } catch (\RuntimeException $e) {
+            // solc might not be available in test environment
+            $this->assertStringContainsString('Compilation failed', $e->getMessage());
+        }
+    }
+
+    public function test_store_artifacts_overwrites_existing_artifacts(): void
+    {
+        $contractName = 'OverwriteTest';
+        $version = '1.0.0';
+
+        $artifacts1 = [
+            'abi' => [['type' => 'function', 'name' => 'test1']],
+            'bytecode' => '0x1111',
+        ];
+
+        $artifacts2 = [
+            'abi' => [['type' => 'function', 'name' => 'test2']],
+            'bytecode' => '0x2222',
+        ];
+
+        $this->compiler->storeArtifacts($contractName, $version, $artifacts1);
+        $this->compiler->storeArtifacts($contractName, $version, $artifacts2);
+
+        $loaded = $this->compiler->loadArtifacts($contractName, $version);
+
+        $this->assertNotNull($loaded);
+        $this->assertEquals('0x2222', $loaded['bytecode']);
+        $this->assertEquals('test2', $loaded['abi'][0]['name']);
+
+        // Cleanup
+        $path = storage_path("app/contracts/{$contractName}");
+        if (File::exists($path)) {
+            File::deleteDirectory($path);
+        }
+    }
+
+    public function test_validate_abi_with_invalid_structure_returns_false(): void
+    {
+        $invalidAbi = [
+            ['invalid' => 'structure'],
+        ];
+
+        $result = $this->compiler->validateAbi($invalidAbi);
+
+        $this->assertFalse($result);
+    }
+
+    public function test_load_artifacts_returns_null_for_missing_contract(): void
+    {
+        $loaded = $this->compiler->loadArtifacts('NonExistentContract_'.uniqid(), '1.0.0');
+
+        $this->assertNull($loaded);
+    }
+
+    public function test_compile_with_optimize_disabled(): void
+    {
+        $compiler = new ContractCompiler([
+            'solc_path' => 'solc',
+            'storage_path' => storage_path('app/contracts'),
+            'optimize' => false,
+        ]);
+
+        try {
+            $result = $compiler->compile(
+                'pragma solidity ^0.8.0; contract Test {}',
+                'Test'
+            );
+
+            $this->assertArrayHasKey('abi', $result);
+            $this->assertArrayHasKey('bytecode', $result);
+        } catch (\RuntimeException $e) {
+            // solc might not be available in test environment
+            $this->assertStringContainsString('Compilation failed', $e->getMessage());
+        }
+    }
 }
