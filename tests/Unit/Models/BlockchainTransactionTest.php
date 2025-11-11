@@ -197,4 +197,174 @@ class BlockchainTransactionTest extends TestCase
 
         $this->assertTrue($transaction->hasFailed());
     }
+
+    public function test_has_contract_relationship(): void
+    {
+        $contract = BlockchainContract::create([
+            'name' => 'TestContract',
+            'version' => '1.0.0',
+            'type' => 'evm',
+            'network' => 'local',
+        ]);
+
+        $transaction = BlockchainTransaction::create([
+            'transaction_hash' => '0xabcd1234',
+            'contract_id' => $contract->id,
+            'method_name' => 'transfer',
+        ]);
+
+        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsTo::class, $transaction->contract());
+    }
+
+    public function test_has_rollback_transaction_relationship(): void
+    {
+        $contract = BlockchainContract::create([
+            'name' => 'TestContract',
+            'version' => '1.0.0',
+            'type' => 'evm',
+            'network' => 'local',
+        ]);
+
+        $transaction = BlockchainTransaction::create([
+            'transaction_hash' => '0xabcd1234',
+            'contract_id' => $contract->id,
+            'method_name' => 'transfer',
+        ]);
+
+        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsTo::class, $transaction->rollbackTransaction());
+    }
+
+    public function test_scope_successful_filters_correctly(): void
+    {
+        $contract = BlockchainContract::create([
+            'name' => 'TestContract',
+            'version' => '1.0.0',
+            'type' => 'evm',
+            'network' => 'local',
+        ]);
+
+        BlockchainTransaction::create([
+            'transaction_hash' => '0xsuccess',
+            'contract_id' => $contract->id,
+            'method_name' => 'transfer',
+            'status' => 'success',
+        ]);
+
+        BlockchainTransaction::create([
+            'transaction_hash' => '0xfailed',
+            'contract_id' => $contract->id,
+            'method_name' => 'transfer',
+            'status' => 'failed',
+        ]);
+
+        $successful = BlockchainTransaction::successful()->get();
+
+        $this->assertCount(1, $successful);
+        $this->assertEquals('0xsuccess', $successful->first()->transaction_hash);
+    }
+
+    public function test_scope_failed_filters_correctly(): void
+    {
+        $contract = BlockchainContract::create([
+            'name' => 'TestContract',
+            'version' => '1.0.0',
+            'type' => 'evm',
+            'network' => 'local',
+        ]);
+
+        BlockchainTransaction::create([
+            'transaction_hash' => '0xfailed1',
+            'contract_id' => $contract->id,
+            'method_name' => 'transfer',
+            'status' => 'failed',
+        ]);
+
+        BlockchainTransaction::create([
+            'transaction_hash' => '0xreverted',
+            'contract_id' => $contract->id,
+            'method_name' => 'transfer',
+            'status' => 'reverted',
+        ]);
+
+        BlockchainTransaction::create([
+            'transaction_hash' => '0xsuccess',
+            'contract_id' => $contract->id,
+            'method_name' => 'transfer',
+            'status' => 'success',
+        ]);
+
+        $failed = BlockchainTransaction::failed()->get();
+
+        $this->assertCount(2, $failed);
+        $this->assertTrue($failed->pluck('status')->contains('failed'));
+        $this->assertTrue($failed->pluck('status')->contains('reverted'));
+    }
+
+    public function test_scope_pending_filters_correctly(): void
+    {
+        $contract = BlockchainContract::create([
+            'name' => 'TestContract',
+            'version' => '1.0.0',
+            'type' => 'evm',
+            'network' => 'local',
+        ]);
+
+        BlockchainTransaction::create([
+            'transaction_hash' => '0xpending',
+            'contract_id' => $contract->id,
+            'method_name' => 'transfer',
+            'status' => 'pending',
+        ]);
+
+        BlockchainTransaction::create([
+            'transaction_hash' => '0xsuccess',
+            'contract_id' => $contract->id,
+            'method_name' => 'transfer',
+            'status' => 'success',
+        ]);
+
+        $pending = BlockchainTransaction::pending()->get();
+
+        $this->assertCount(1, $pending);
+        $this->assertEquals('0xpending', $pending->first()->transaction_hash);
+    }
+
+    public function test_is_confirmed_returns_false_when_not_confirmed(): void
+    {
+        $contract = BlockchainContract::create([
+            'name' => 'TestContract',
+            'version' => '1.0.0',
+            'type' => 'evm',
+            'network' => 'local',
+        ]);
+
+        $transaction = BlockchainTransaction::create([
+            'transaction_hash' => '0xabcd1234',
+            'contract_id' => $contract->id,
+            'method_name' => 'transfer',
+            'status' => 'pending',
+            'confirmed_at' => null,
+        ]);
+
+        $this->assertFalse($transaction->isConfirmed());
+    }
+
+    public function test_has_failed_returns_true_for_reverted(): void
+    {
+        $contract = BlockchainContract::create([
+            'name' => 'TestContract',
+            'version' => '1.0.0',
+            'type' => 'evm',
+            'network' => 'local',
+        ]);
+
+        $transaction = BlockchainTransaction::create([
+            'transaction_hash' => '0xabcd1234',
+            'contract_id' => $contract->id,
+            'method_name' => 'transfer',
+            'status' => 'reverted',
+        ]);
+
+        $this->assertTrue($transaction->hasFailed());
+    }
 }

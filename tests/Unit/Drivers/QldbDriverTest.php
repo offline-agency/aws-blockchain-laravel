@@ -320,4 +320,187 @@ class QldbDriverTest extends TestCase
 
         $this->assertEquals('supply-chain-ledger', $info['ledger_name']);
     }
+
+    public function test_deploy_contract_returns_not_supported_status()
+    {
+        $driver = new QldbDriver($this->config, $this->mockClient, $this->mockSessionClient);
+
+        $result = $driver->deployContract([
+            'name' => 'TestContract',
+            'bytecode' => '0x1234',
+        ]);
+
+        $this->assertIsArray($result);
+        $this->assertNull($result['address']);
+        $this->assertEquals('not_supported', $result['status']);
+        $this->assertArrayHasKey('transaction_hash', $result);
+    }
+
+    public function test_call_contract_throws_exception()
+    {
+        $driver = new QldbDriver($this->config, $this->mockClient, $this->mockSessionClient);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Contract calls are not supported in QLDB');
+
+        $driver->callContract(
+            '0x1234567890123456789012345678901234567890',
+            '[]',
+            'testMethod',
+            []
+        );
+    }
+
+    public function test_estimate_gas_returns_zero()
+    {
+        $driver = new QldbDriver($this->config, $this->mockClient, $this->mockSessionClient);
+
+        $gas = $driver->estimateGas([
+            'from' => '0x1234',
+            'to' => '0x5678',
+        ]);
+
+        $this->assertEquals(0, $gas);
+    }
+
+    public function test_get_gas_price_returns_zero()
+    {
+        $driver = new QldbDriver($this->config, $this->mockClient, $this->mockSessionClient);
+
+        $gasPrice = $driver->getGasPrice();
+
+        $this->assertEquals(0, $gasPrice);
+    }
+
+    public function test_get_balance_returns_zero()
+    {
+        $driver = new QldbDriver($this->config, $this->mockClient, $this->mockSessionClient);
+
+        $balance = $driver->getBalance('0x1234567890123456789012345678901234567890');
+
+        $this->assertEquals('0', $balance);
+    }
+
+    public function test_get_transaction_receipt_returns_null_when_not_found()
+    {
+        // Mock session token (called twice: once in getTransactionReceipt, once in startTransaction)
+        $this->mockClient->shouldReceive('sendCommand')
+            ->twice()
+            ->andReturn(new Result(['StartSession' => ['SessionToken' => 'test-session-token']]));
+
+        // Mock start transaction
+        $this->mockSessionClient->shouldReceive('sendCommand')
+            ->once()
+            ->with(Mockery::on(function ($args) {
+                return isset($args['StartTransaction']);
+            }))
+            ->andReturn(new Result(['StartTransaction' => ['TransactionId' => 'test-tx-id']]));
+
+        // Mock empty result
+        $this->mockSessionClient->shouldReceive('sendCommand')
+            ->once()
+            ->andReturn(new Result(['ExecuteStatement' => ['FirstPage' => []]]));
+
+        $driver = new QldbDriver($this->config, $this->mockClient, $this->mockSessionClient);
+
+        $receipt = $driver->getTransactionReceipt('nonexistent-hash');
+
+        $this->assertNull($receipt);
+    }
+
+    public function test_get_transaction_receipt_returns_receipt_when_found()
+    {
+        // Mock session token (called twice: once in getTransactionReceipt, once in startTransaction)
+        $this->mockClient->shouldReceive('sendCommand')
+            ->twice()
+            ->andReturn(new Result(['StartSession' => ['SessionToken' => 'test-session-token']]));
+
+        // Mock start transaction
+        $this->mockSessionClient->shouldReceive('sendCommand')
+            ->once()
+            ->with(Mockery::on(function ($args) {
+                return isset($args['StartTransaction']);
+            }))
+            ->andReturn(new Result(['StartTransaction' => ['TransactionId' => 'test-tx-id']]));
+
+        // Mock result with transaction
+        $this->mockSessionClient->shouldReceive('sendCommand')
+            ->once()
+            ->andReturn(new Result([
+                'ExecuteStatement' => [
+                    'FirstPage' => [
+                        'Values' => [
+                            ['Document' => ['timestamp' => '2024-01-01T00:00:00Z']],
+                        ],
+                    ],
+                ],
+            ]));
+
+        $driver = new QldbDriver($this->config, $this->mockClient, $this->mockSessionClient);
+
+        $receipt = $driver->getTransactionReceipt('test-hash');
+
+        $this->assertIsArray($receipt);
+        $this->assertEquals('test-hash', $receipt['transactionHash']);
+        $this->assertTrue($receipt['status']);
+    }
+
+    public function test_get_transaction_receipt_handles_exception()
+    {
+        $this->mockClient->shouldReceive('sendCommand')
+            ->once()
+            ->andThrow(new AwsException('Network error', new \Aws\Command('sendCommand')));
+
+        $driver = new QldbDriver($this->config, $this->mockClient, $this->mockSessionClient);
+
+        $receipt = $driver->getTransactionReceipt('test-hash');
+
+        $this->assertNull($receipt);
+    }
+
+    public function test_send_transaction_calls_record_event()
+    {
+        // Mock session token (called twice: once in sendTransaction->recordEvent, once in startTransaction)
+        $this->mockClient->shouldReceive('sendCommand')
+            ->twice()
+            ->andReturn(new Result(['StartSession' => ['SessionToken' => 'test-session-token']]));
+
+        // Mock start transaction
+        $this->mockSessionClient->shouldReceive('sendCommand')
+            ->once()
+            ->with(Mockery::on(function ($args) {
+                return isset($args['StartTransaction']);
+            }))
+            ->andReturn(new Result(['StartTransaction' => ['TransactionId' => 'test-tx-id']]));
+
+        // Mock execute statement
+        $this->mockSessionClient->shouldReceive('sendCommand')
+            ->once()
+            ->with(Mockery::on(function ($args) {
+                return isset($args['ExecuteStatement']);
+            }))
+            ->andReturn(new Result(['ExecuteStatement' => ['TransactionId' => 'test-tx-id']]));
+
+        $driver = new QldbDriver($this->config, $this->mockClient, $this->mockSessionClient);
+
+        $transactionHash = $driver->sendTransaction([
+            'data' => ['test' => 'data'],
+        ]);
+
+        $this->assertIsString($transactionHash);
+        $this->assertStringStartsWith('doc_', $transactionHash);
+    }
+
+    public function test_send_transaction_handles_exception()
+    {
+        $this->mockClient->shouldReceive('sendCommand')
+            ->once()
+            ->andThrow(new AwsException('Network error', new \Aws\Command('sendCommand')));
+
+        $driver = new QldbDriver($this->config, $this->mockClient, $this->mockSessionClient);
+
+        $this->expectException(AwsException::class);
+
+        $driver->sendTransaction(['data' => ['test' => 'data']]);
+    }
 }
