@@ -483,6 +483,40 @@ composer test
 composer test-coverage
 ```
 
+## Changelog
+
+Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
+
+## Contributing
+
+Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
+
+## Security Vulnerabilities
+
+Please review our [security policy](SECURITY.md) on how to report security vulnerabilities.
+
+## Credits
+
+- **Offline Agency**
+- **All Contributors**
+
+Based on [italia/spid-laravel](https://github.com/italia/spid-laravel)
+
+## Support
+
+For support and questions:
+
+- **Email**: support@offlineagency.it
+- **GitHub Issues**: [Create an issue](https://github.com/offline-agency/aws-laravel-blockchain/issues)
+
 ## License
 
-MIT License - see LICENSE file for details.
+The MIT License (MIT). Please see [License File](LICENSE) for more information.
+
+## About Offline Agency
+
+Offline Agency is a web development agency based in Italy, specializing in Laravel and Filament applications.
+
+- **Website**: https://offlineagency.it
+- **GitHub**: [@offline-agency](https://github.com/offline-agency)
+- **Email**: support@offlineagency.it
