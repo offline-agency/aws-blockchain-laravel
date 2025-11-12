@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\App;
 class RollbackContractCommand extends Command
 {
     protected $signature = 'blockchain:rollback {contract : Contract name or address}
-                            {--version= : Target version to rollback to}
+                            {--target-version= : Target version to rollback to}
                             {--from= : Address performing the rollback}
                             {--json : Output in JSON format}';
 
@@ -24,6 +24,12 @@ class RollbackContractCommand extends Command
     public function handle(): int
     {
         $identifier = $this->argument('contract');
+
+        if (! is_string($identifier)) {
+            $this->error('Contract identifier must be a string');
+
+            return Command::FAILURE;
+        }
 
         try {
             $contract = $this->findContract($identifier);
@@ -44,7 +50,7 @@ class RollbackContractCommand extends Command
             $config = config('aws-blockchain-laravel.contracts', []);
             $blockchain = App::make('blockchain');
             $driver = $blockchain->driver();
-            
+
             $compiler = new ContractCompiler($config['compiler'] ?? []);
             $deployer = new ContractDeployer($driver, $compiler, $config);
             $interactor = new ContractInteractor($driver, $config);
@@ -60,13 +66,18 @@ class RollbackContractCommand extends Command
             $options = ['from' => $this->option('from')];
 
             $this->info('Rolling back contract...');
-            $result = $upgrader->rollback($contract, $this->option('version'), $options);
+            $versionOption = $this->option('target-version');
+            $targetVersion = is_string($versionOption) ? $versionOption : null;
+            $result = $upgrader->rollback($contract, $targetVersion, $options);
 
             if ($this->option('json')) {
-                $this->line(json_encode([
+                $jsonOutput = json_encode([
                     'success' => true,
                     'restored_version' => $result['restored_contract']->version,
-                ], JSON_PRETTY_PRINT));
+                ], JSON_PRETTY_PRINT);
+                if ($jsonOutput !== false) {
+                    $this->line($jsonOutput);
+                }
             } else {
                 $this->info('✓ Contract rolled back successfully!');
                 $this->line('  Restored version: '.$result['restored_contract']->version);
@@ -87,4 +98,3 @@ class RollbackContractCommand extends Command
             ->first();
     }
 }
-

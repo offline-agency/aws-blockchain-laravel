@@ -7,6 +7,25 @@ namespace AwsBlockchain\Laravel\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id
+ * @property string $transaction_hash
+ * @property int $contract_id
+ * @property string $method_name
+ * @property array|null $parameters
+ * @property array|null $return_values
+ * @property int|null $gas_used
+ * @property int|null $gas_price
+ * @property string|null $from_address
+ * @property string|null $to_address
+ * @property string $status
+ * @property string|null $error_message
+ * @property int|null $rollback_id
+ * @property int|null $block_number
+ * @property \Illuminate\Support\Carbon|null $confirmed_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ */
 class BlockchainTransaction extends Model
 {
     /**
@@ -57,7 +76,7 @@ class BlockchainTransaction extends Model
     /**
      * Get the contract associated with this transaction.
      *
-     * @return BelongsTo<BlockchainContract, BlockchainTransaction>
+     * @return BelongsTo<BlockchainContract, $this>
      */
     public function contract(): BelongsTo
     {
@@ -67,7 +86,7 @@ class BlockchainTransaction extends Model
     /**
      * Get the rollback transaction if this is a rollback.
      *
-     * @return BelongsTo<BlockchainTransaction, BlockchainTransaction>
+     * @return BelongsTo<BlockchainTransaction, $this>
      */
     public function rollbackTransaction(): BelongsTo
     {
@@ -80,7 +99,7 @@ class BlockchainTransaction extends Model
      * @param  \Illuminate\Database\Eloquent\Builder<BlockchainTransaction>  $query
      * @return \Illuminate\Database\Eloquent\Builder<BlockchainTransaction>
      */
-    public function scopeSuccessful($query)
+    public function scopeSuccessful($query): \Illuminate\Database\Eloquent\Builder
     {
         return $query->where('status', 'success');
     }
@@ -91,7 +110,7 @@ class BlockchainTransaction extends Model
      * @param  \Illuminate\Database\Eloquent\Builder<BlockchainTransaction>  $query
      * @return \Illuminate\Database\Eloquent\Builder<BlockchainTransaction>
      */
-    public function scopeFailed($query)
+    public function scopeFailed($query): \Illuminate\Database\Eloquent\Builder
     {
         return $query->whereIn('status', ['failed', 'reverted']);
     }
@@ -102,7 +121,7 @@ class BlockchainTransaction extends Model
      * @param  \Illuminate\Database\Eloquent\Builder<BlockchainTransaction>  $query
      * @return \Illuminate\Database\Eloquent\Builder<BlockchainTransaction>
      */
-    public function scopePending($query)
+    public function scopePending($query): \Illuminate\Database\Eloquent\Builder
     {
         return $query->where('status', 'pending');
     }
@@ -174,4 +193,3 @@ class BlockchainTransaction extends Model
         return in_array($this->status, ['failed', 'reverted']);
     }
 }
-

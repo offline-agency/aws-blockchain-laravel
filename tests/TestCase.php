@@ -21,6 +21,14 @@ abstract class TestCase extends Orchestra
 
     protected function getEnvironmentSetUp($app)
     {
+        // Setup database
+        $app['config']->set('database.default', 'testing');
+        $app['config']->set('database.connections.testing', [
+            'driver' => 'sqlite',
+            'database' => ':memory:',
+            'prefix' => '',
+        ]);
+
         $app['config']->set('aws-blockchain-laravel', [
             'default_driver' => 'mock',
             'public_driver' => 'mock',
@@ -63,5 +71,10 @@ abstract class TestCase extends Orchestra
                 ],
             ],
         ]);
+    }
+
+    protected function defineDatabaseMigrations()
+    {
+        $this->loadMigrationsFrom(realpath(__DIR__.'/../database/migrations'));
     }
 }

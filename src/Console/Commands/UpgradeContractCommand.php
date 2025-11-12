@@ -40,6 +40,13 @@ class UpgradeContractCommand extends Command
     public function handle(): int
     {
         $identifier = $this->argument('identifier');
+
+        if (! is_string($identifier)) {
+            $this->error('Contract identifier must be a string');
+
+            return Command::FAILURE;
+        }
+
         [$contractName, $currentVersion] = $this->parseIdentifier($identifier);
 
         try {
@@ -59,7 +66,7 @@ class UpgradeContractCommand extends Command
             $config = config('aws-blockchain-laravel.contracts', []);
             $blockchain = App::make('blockchain');
             $driver = $blockchain->driver();
-            
+
             $compiler = new ContractCompiler($config['compiler'] ?? []);
             $deployer = new ContractDeployer($driver, $compiler, $config);
             $interactor = new ContractInteractor($driver, $config);
@@ -95,12 +102,15 @@ class UpgradeContractCommand extends Command
 
         } catch (\Exception $e) {
             $this->error('Upgrade failed: '.$e->getMessage());
-            
+
             if ($this->option('json')) {
-                $this->line(json_encode([
+                $jsonOutput = json_encode([
                     'success' => false,
                     'error' => $e->getMessage(),
-                ], JSON_PRETTY_PRINT));
+                ], JSON_PRETTY_PRINT);
+                if ($jsonOutput !== false) {
+                    $this->line($jsonOutput);
+                }
             }
 
             return Command::FAILURE;
@@ -115,7 +125,9 @@ class UpgradeContractCommand extends Command
     protected function parseIdentifier(string $identifier): array
     {
         if (str_contains($identifier, '@')) {
-            return explode('@', $identifier, 2);
+            $parts = explode('@', $identifier, 2);
+
+            return [$parts[0], $parts[1] ?? null];
         }
 
         return [$identifier, null];
@@ -180,19 +192,22 @@ class UpgradeContractCommand extends Command
                 ],
             ];
 
-            $this->line(json_encode($output, JSON_PRETTY_PRINT));
+            $jsonOutput = json_encode($output, JSON_PRETTY_PRINT);
+            if ($jsonOutput !== false) {
+                $this->line($jsonOutput);
+            }
 
             return Command::SUCCESS;
         }
 
         $this->info('✓ Contract upgraded successfully!');
         $this->newLine();
-        
+
         $this->info('Old Contract:');
         $this->line('  Version: '.$result['old_contract']->version);
         $this->line('  Address: '.$result['old_contract']->address);
         $this->newLine();
-        
+
         $this->info('New Contract:');
         $this->line('  Version: '.$result['new_contract']->version);
         $this->line('  Address: '.$result['new_contract']->address);
@@ -200,4 +215,3 @@ class UpgradeContractCommand extends Command
         return Command::SUCCESS;
     }
 }
-

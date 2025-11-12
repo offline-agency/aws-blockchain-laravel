@@ -19,6 +19,12 @@ class ContractStatusCommand extends Command
     {
         $identifier = $this->argument('contract');
 
+        if (! is_string($identifier)) {
+            $this->error('Contract identifier must be a string');
+
+            return Command::FAILURE;
+        }
+
         $contract = $this->findContract($identifier);
 
         if (! $contract) {
@@ -28,7 +34,10 @@ class ContractStatusCommand extends Command
         }
 
         if ($this->option('json')) {
-            $this->line($contract->toJson(JSON_PRETTY_PRINT));
+            $jsonOutput = $contract->toJson(JSON_PRETTY_PRINT);
+            if ($jsonOutput !== false) {
+                $this->line($jsonOutput);
+            }
 
             return Command::SUCCESS;
         }
@@ -83,4 +92,3 @@ class ContractStatusCommand extends Command
         return $query->first();
     }
 }
-

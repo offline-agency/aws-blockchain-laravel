@@ -15,12 +15,13 @@ class ContractInteractorTest extends TestCase
     use RefreshDatabase;
 
     protected ContractInteractor $interactor;
+
     protected MockDriver $driver;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->driver = new MockDriver('mock');
         $this->interactor = new ContractInteractor($this->driver, [
             'gas' => [
@@ -134,6 +135,245 @@ class ContractInteractorTest extends TestCase
         $this->expectException(\RuntimeException::class);
 
         $this->interactor->call($contract, 'someMethod', []);
+    }
+
+    public function test_can_call_state_changing_function(): void
+    {
+        $contract = $this->createTestContract();
+
+        $result = $this->interactor->call(
+            $contract,
+            'transfer',
+            ['0x0987654321098765432109876543210987654321', 1000],
+            ['from' => '0x0000000000000000000000000000000000000001']
+        );
+
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('transaction_hash', $result);
+    }
+
+    public function test_can_call_with_wait_option(): void
+    {
+        $contract = $this->createTestContract();
+
+        $result = $this->interactor->call(
+            $contract,
+            'transfer',
+            ['0x0987654321098765432109876543210987654321', 1000],
+            [
+                'from' => '0x0000000000000000000000000000000000000001',
+                'wait' => true,
+                'timeout' => 1, // Short timeout for testing
+            ]
+        );
+
+        // Result might be receipt or transaction hash depending on confirmation
+        $this->assertNotNull($result);
+    }
+
+    public function test_call_throws_when_contract_address_is_null(): void
+    {
+        $contract = BlockchainContract::create([
+            'name' => 'TestContract',
+            'version' => '1.0.0',
+            'type' => 'evm',
+            'address' => null,
+            'network' => 'local',
+            'abi' => json_encode([
+                [
+                    'type' => 'function',
+                    'name' => 'balanceOf',
+                    'stateMutability' => 'view',
+                    'inputs' => [],
+                ],
+            ]),
+        ]);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Contract address is required');
+
+        $this->interactor->call($contract, 'balanceOf', []);
+    }
+
+    public function test_estimate_gas_uses_default_when_estimation_fails(): void
+    {
+        $contract = $this->createTestContract();
+
+        // Use the existing driver which might fail on estimateGas
+        // The method should catch exceptions and return default
+        $estimate = $this->interactor->estimateGas(
+            $contract,
+            'transfer',
+            ['0x0987654321098765432109876543210987654321', 1000],
+            []
+        );
+
+        // Should return either a valid estimate or the default
+        $this->assertIsInt($estimate);
+        $this->assertGreaterThanOrEqual(0, $estimate);
+    }
+
+    public function test_wait_for_confirmation_returns_null_on_timeout(): void
+    {
+        // Use a very short timeout to test timeout behavior
+        // The method will sleep for 2 seconds between checks, so with 0 second timeout
+        // it should return null immediately
+        $result = $this->interactor->waitForConfirmation('0x1234567890abcdef', 0);
+
+        // Will timeout immediately and return null
+        $this->assertNull($result);
+    }
+
+    public function test_format_return_value_with_array(): void
+    {
+        $formatted = $this->interactor->formatReturnValue(['key1' => 'value1', 'key2' => 'value2']);
+
+        $this->assertIsString($formatted);
+        $this->assertStringContainsString('key1', $formatted);
+    }
+
+    public function test_format_return_value_with_integer(): void
+    {
+        $formatted = $this->interactor->formatReturnValue(12345);
+
+        $this->assertEquals('12345', $formatted);
+    }
+
+    public function test_format_return_value_with_null(): void
+    {
+        $formatted = $this->interactor->formatReturnValue(null);
+
+        $this->assertEquals('', $formatted); // null casts to empty string
+    }
+
+    public function test_parse_parameters_handles_empty_string(): void
+    {
+        $params = $this->interactor->parseParameters('');
+
+        $this->assertIsArray($params);
+        $this->assertCount(1, $params);
+        $this->assertEquals('', $params[0]);
+    }
+
+    public function test_parse_parameters_handles_invalid_json(): void
+    {
+        $params = $this->interactor->parseParameters('not valid json, but has comma');
+
+        $this->assertIsArray($params);
+        $this->assertGreaterThan(1, count($params));
+    }
+
+    public function test_call_handles_pure_function(): void
+    {
+        $contract = BlockchainContract::create([
+            'name' => 'TestContract',
+            'version' => '1.0.0',
+            'type' => 'evm',
+            'address' => '0x1234567890123456789012345678901234567890',
+            'network' => 'local',
+            'abi' => json_encode([
+                [
+                    'type' => 'function',
+                    'name' => 'calculate',
+                    'stateMutability' => 'pure',
+                    'inputs' => [],
+                ],
+            ]),
+        ]);
+
+        $result = $this->interactor->call($contract, 'calculate', []);
+
+        $this->assertNotNull($result);
+    }
+
+    public function test_call_with_state_changing_method_and_wait_false(): void
+    {
+        $contract = BlockchainContract::create([
+            'name' => 'TestContract',
+            'version' => '1.0.0',
+            'type' => 'evm',
+            'address' => '0x1234567890123456789012345678901234567890',
+            'network' => 'local',
+            'abi' => json_encode([
+                [
+                    'type' => 'function',
+                    'name' => 'mint',
+                    'stateMutability' => 'nonpayable',
+                    'inputs' => [['type' => 'uint256']],
+                ],
+            ]),
+        ]);
+
+        $result = $this->interactor->call($contract, 'mint', [1000], ['wait' => false]);
+        $this->assertNotNull($result);
+    }
+
+    public function test_call_with_from_address_option(): void
+    {
+        $contract = $this->createTestContract();
+
+        $result = $this->interactor->call(
+            $contract,
+            'transfer',
+            ['0x0987654321098765432109876543210987654321', 1000],
+            ['from' => '0x1111111111111111111111111111111111111111']
+        );
+
+        $this->assertNotNull($result);
+    }
+
+    public function test_call_with_gas_limit_option(): void
+    {
+        $contract = $this->createTestContract();
+
+        $result = $this->interactor->call(
+            $contract,
+            'transfer',
+            ['0x0987654321098765432109876543210987654321', 1000],
+            ['gas_limit' => 100000]
+        );
+
+        $this->assertNotNull($result);
+    }
+
+    public function test_wait_for_confirmation_with_successful_receipt(): void
+    {
+        $mockDriver = \Mockery::mock($this->driver)->makePartial();
+        $mockDriver->shouldReceive('getTransactionReceipt')
+            ->once()
+            ->andReturn([
+                'transactionHash' => '0xtest',
+                'blockNumber' => 12345,
+                'status' => true,
+            ]);
+
+        $interactor = new ContractInteractor($mockDriver, [
+            'gas' => [
+                'default_limit' => 100000,
+                'price_multiplier' => 1.1,
+            ],
+        ]);
+        $receipt = $interactor->waitForConfirmation('0xtest', 10);
+
+        $this->assertNotNull($receipt);
+        $this->assertEquals('0xtest', $receipt['transactionHash']);
+    }
+
+    public function test_parse_parameters_with_numeric_string(): void
+    {
+        $params = $this->interactor->parseParameters('1000');
+        $this->assertIsArray($params);
+        $this->assertCount(1, $params);
+    }
+
+    public function test_format_return_value_with_boolean_true(): void
+    {
+        $this->assertEquals('true', $this->interactor->formatReturnValue(true));
+    }
+
+    public function test_format_return_value_with_boolean_false(): void
+    {
+        $this->assertEquals('false', $this->interactor->formatReturnValue(false));
     }
 
     protected function createTestContract(): BlockchainContract

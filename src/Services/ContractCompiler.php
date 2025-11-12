@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AwsBlockchain\Laravel\Services;
 
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
 
 class ContractCompiler
 {
@@ -133,7 +132,11 @@ class ContractCompiler
             'source_hash' => $artifacts['source_hash'] ?? null,
         ];
 
-        File::put($artifactPath, json_encode($metadata, JSON_PRETTY_PRINT));
+        $jsonContent = json_encode($metadata, JSON_PRETTY_PRINT);
+        if ($jsonContent === false) {
+            throw new \RuntimeException('Failed to encode contract metadata to JSON');
+        }
+        File::put($artifactPath, $jsonContent);
     }
 
     /**
@@ -183,8 +186,8 @@ class ContractCompiler
     public function getMethod(array $abi, string $methodName): ?array
     {
         foreach ($abi as $item) {
-            if (is_array($item) && 
-                ($item['type'] ?? '') === 'function' && 
+            if (is_array($item) &&
+                ($item['type'] ?? '') === 'function' &&
                 ($item['name'] ?? '') === $methodName) {
                 return $item;
             }
@@ -273,4 +276,3 @@ class ContractCompiler
         return 'unknown';
     }
 }
-

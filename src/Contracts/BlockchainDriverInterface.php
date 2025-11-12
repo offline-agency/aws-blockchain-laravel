@@ -47,7 +47,7 @@ interface BlockchainDriverInterface
     /**
      * Deploy a smart contract
      *
-     * @param  array<string, mixed>  $params Contract deployment parameters
+     * @param  array<string, mixed>  $params  Contract deployment parameters
      * @return array<string, mixed> Deployment result with address and transaction hash
      */
     public function deployContract(array $params): array;
@@ -55,10 +55,10 @@ interface BlockchainDriverInterface
     /**
      * Call a contract method
      *
-     * @param  string  $address Contract address
-     * @param  string  $abi Contract ABI JSON
-     * @param  string  $method Method name to call
-     * @param  array<int, mixed>  $params Method parameters
+     * @param  string  $address  Contract address
+     * @param  string  $abi  Contract ABI JSON
+     * @param  string  $method  Method name to call
+     * @param  array<int, mixed>  $params  Method parameters
      * @return mixed Method return value
      */
     public function callContract(string $address, string $abi, string $method, array $params = []): mixed;
@@ -66,7 +66,7 @@ interface BlockchainDriverInterface
     /**
      * Estimate gas for a transaction
      *
-     * @param  array<string, mixed>  $transaction Transaction parameters
+     * @param  array<string, mixed>  $transaction  Transaction parameters
      * @return int Estimated gas units
      */
     public function estimateGas(array $transaction): int;
@@ -74,7 +74,7 @@ interface BlockchainDriverInterface
     /**
      * Get transaction receipt
      *
-     * @param  string  $hash Transaction hash
+     * @param  string  $hash  Transaction hash
      * @return array<string, mixed>|null Transaction receipt or null if not found
      */
     public function getTransactionReceipt(string $hash): ?array;
@@ -89,7 +89,7 @@ interface BlockchainDriverInterface
     /**
      * Send a transaction
      *
-     * @param  array<string, mixed>  $transaction Transaction parameters
+     * @param  array<string, mixed>  $transaction  Transaction parameters
      * @return string Transaction hash
      */
     public function sendTransaction(array $transaction): string;
@@ -97,7 +97,7 @@ interface BlockchainDriverInterface
     /**
      * Get account balance
      *
-     * @param  string  $address Account address
+     * @param  string  $address  Account address
      * @return string Balance in wei as string
      */
     public function getBalance(string $address): string;

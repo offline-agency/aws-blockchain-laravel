@@ -88,7 +88,9 @@ class SimplifiedServiceProviderTest extends TestCase
         // Should not throw exception
         $provider->boot();
 
-        $this->assertTrue(true); // If we get here, no exception was thrown
+        // Verify provider is in valid state after boot
+        $this->assertInstanceOf(AwsBlockchainServiceProvider::class, $provider);
+        $this->assertIsArray($provider->provides());
     }
 
     public function test_register_method_can_be_called_multiple_times()
@@ -100,6 +102,9 @@ class SimplifiedServiceProviderTest extends TestCase
         $provider->register();
         $provider->register();
 
-        $this->assertTrue(true); // If we get here, no exception was thrown
+        // Verify services are registered
+        $this->assertTrue($this->app->bound('blockchain'));
+        $this->assertTrue($this->app->bound('blockchain.public'));
+        $this->assertTrue($this->app->bound('blockchain.private'));
     }
 }

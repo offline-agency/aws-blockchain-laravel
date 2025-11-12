@@ -22,7 +22,6 @@ class ManagedBlockchainDriver implements BlockchainDriverInterface
 
     /**
      * @param  array<string, mixed>  $config
-     * @param  ManagedBlockchainClient|null  $client
      */
     public function __construct(array $config, ?ManagedBlockchainClient $client = null)
     {
@@ -76,6 +75,7 @@ class ManagedBlockchainDriver implements BlockchainDriverInterface
                 'error' => $e->getMessage(),
                 'data' => $data,
             ]);
+
             throw $e;
         }
     }
@@ -216,6 +216,7 @@ class ManagedBlockchainDriver implements BlockchainDriverInterface
             Log::error('Failed to deploy chaincode', [
                 'error' => $e->getMessage(),
             ]);
+
             throw $e;
         }
     }
@@ -245,6 +246,7 @@ class ManagedBlockchainDriver implements BlockchainDriverInterface
                 'chaincode' => $address,
                 'method' => $method,
             ]);
+
             throw $e;
         }
     }
@@ -323,6 +325,7 @@ class ManagedBlockchainDriver implements BlockchainDriverInterface
             Log::error('Failed to send transaction', [
                 'error' => $e->getMessage(),
             ]);
+
             throw $e;
         }
     }

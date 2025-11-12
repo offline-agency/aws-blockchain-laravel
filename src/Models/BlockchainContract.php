@@ -8,6 +8,28 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id
+ * @property string $name
+ * @property string $version
+ * @property string $type
+ * @property string|null $address
+ * @property string $network
+ * @property string|null $deployer_address
+ * @property string|null $abi
+ * @property string|null $bytecode_hash
+ * @property array|null $constructor_params
+ * @property \Illuminate\Support\Carbon|null $deployed_at
+ * @property string|null $transaction_hash
+ * @property int|null $gas_used
+ * @property string $status
+ * @property bool $is_upgradeable
+ * @property int|null $proxy_contract_id
+ * @property int|null $implementation_of
+ * @property array|null $metadata
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ */
 class BlockchainContract extends Model
 {
     /**
@@ -59,7 +81,7 @@ class BlockchainContract extends Model
     /**
      * Get the transactions associated with this contract.
      *
-     * @return HasMany<BlockchainTransaction>
+     * @return HasMany<BlockchainTransaction, $this>
      */
     public function transactions(): HasMany
     {
@@ -69,7 +91,7 @@ class BlockchainContract extends Model
     /**
      * Get the proxy contract if this is an implementation.
      *
-     * @return BelongsTo<BlockchainContract, BlockchainContract>
+     * @return BelongsTo<BlockchainContract, $this>
      */
     public function proxyContract(): BelongsTo
     {
@@ -79,7 +101,7 @@ class BlockchainContract extends Model
     /**
      * Get the implementation contract if this is a proxy.
      *
-     * @return BelongsTo<BlockchainContract, BlockchainContract>
+     * @return BelongsTo<BlockchainContract, $this>
      */
     public function implementationContract(): BelongsTo
     {
@@ -89,7 +111,7 @@ class BlockchainContract extends Model
     /**
      * Get the implementations of this proxy.
      *
-     * @return HasMany<BlockchainContract>
+     * @return HasMany<BlockchainContract, $this>
      */
     public function implementations(): HasMany
     {
@@ -102,7 +124,7 @@ class BlockchainContract extends Model
      * @param  \Illuminate\Database\Eloquent\Builder<BlockchainContract>  $query
      * @return \Illuminate\Database\Eloquent\Builder<BlockchainContract>
      */
-    public function scopeDeployed($query)
+    public function scopeDeployed($query): \Illuminate\Database\Eloquent\Builder
     {
         return $query->where('status', 'deployed');
     }
@@ -113,7 +135,7 @@ class BlockchainContract extends Model
      * @param  \Illuminate\Database\Eloquent\Builder<BlockchainContract>  $query
      * @return \Illuminate\Database\Eloquent\Builder<BlockchainContract>
      */
-    public function scopeActive($query)
+    public function scopeActive($query): \Illuminate\Database\Eloquent\Builder
     {
         return $query->whereIn('status', ['deployed', 'upgraded']);
     }
@@ -122,10 +144,9 @@ class BlockchainContract extends Model
      * Scope a query to filter by network.
      *
      * @param  \Illuminate\Database\Eloquent\Builder<BlockchainContract>  $query
-     * @param  string  $network
      * @return \Illuminate\Database\Eloquent\Builder<BlockchainContract>
      */
-    public function scopeOnNetwork($query, string $network)
+    public function scopeOnNetwork($query, string $network): \Illuminate\Database\Eloquent\Builder
     {
         return $query->where('network', $network);
     }
@@ -153,7 +174,8 @@ class BlockchainContract extends Model
      */
     public function setAbiFromArray(array $abi): void
     {
-        $this->abi = json_encode($abi);
+        $encoded = json_encode($abi);
+        $this->abi = $encoded !== false ? $encoded : null;
     }
 
     /**
@@ -182,4 +204,3 @@ class BlockchainContract extends Model
         return "{$this->name}@{$this->version}";
     }
 }
-

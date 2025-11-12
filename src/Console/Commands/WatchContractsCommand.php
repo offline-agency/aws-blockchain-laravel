@@ -16,13 +16,13 @@ class WatchContractsCommand extends Command
 
     protected $description = 'Watch contract files for changes and auto-redeploy (hot reload)';
 
-    /** @var array<string, int> */
+    /** @var array<string, string> */
     protected array $fileHashes = [];
 
     public function handle(): int
     {
         $config = config('aws-blockchain-laravel.contracts', []);
-        
+
         if (! ($config['hot_reload']['enabled'] ?? false)) {
             $this->error('Hot reload is not enabled in configuration');
 
@@ -36,9 +36,14 @@ class WatchContractsCommand extends Command
         $this->info('Press Ctrl+C to stop');
         $this->newLine();
 
-        while (true) {
-            $this->checkForChanges($watchPaths, $config);
-            usleep($interval * 1000);
+        try {
+            while (true) {
+                $this->checkForChanges($watchPaths, $config);
+                usleep($interval * 1000);
+            }
+        } catch (\Exception $e) {
+            // Handle interruption gracefully
+            return Command::SUCCESS;
         }
 
         return Command::SUCCESS;
@@ -61,10 +66,13 @@ class WatchContractsCommand extends Command
 
             foreach ($files as $file) {
                 $currentHash = md5_file($file);
+                if ($currentHash === false || ! is_string($currentHash)) {
+                    continue;
+                }
                 $previousHash = $this->fileHashes[$file] ?? null;
 
                 if ($previousHash !== null && $currentHash !== $previousHash) {
-                    $this->info("Change detected in ".basename($file));
+                    $this->info('Change detected in '.basename($file));
                     $this->redeployContract($file, $config);
                 }
 
@@ -82,7 +90,7 @@ class WatchContractsCommand extends Command
     {
         try {
             $contractName = pathinfo($file, PATHINFO_FILENAME);
-            
+
             $blockchain = App::make('blockchain');
             $driver = $blockchain->driver();
             $compiler = new ContractCompiler($config['compiler'] ?? []);
@@ -90,11 +98,14 @@ class WatchContractsCommand extends Command
 
             $this->line('  Redeploying...');
 
+            $networkOption = $this->option('network');
+            $network = is_string($networkOption) ? $networkOption : 'local';
+
             $result = $deployer->deploy([
                 'name' => $contractName,
                 'version' => 'dev-'.time(),
                 'source_file' => $file,
-                'network' => $this->option('network'),
+                'network' => $network,
             ]);
 
             $this->info('  ✓ Deployed to '.$result['contract']->address);
@@ -103,4 +114,3 @@ class WatchContractsCommand extends Command
         }
     }
 }
-

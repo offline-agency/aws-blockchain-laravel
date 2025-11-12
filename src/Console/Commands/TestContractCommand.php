@@ -36,13 +36,21 @@ class TestContractCommand extends Command
     public function handle(): int
     {
         $contractName = $this->argument('name');
-        $network = $this->option('network');
+        $networkOption = $this->option('network');
+
+        if (! is_string($contractName)) {
+            $this->error('Contract name must be a string');
+
+            return Command::FAILURE;
+        }
+
+        $network = is_string($networkOption) ? $networkOption : 'local';
 
         try {
             $config = config('aws-blockchain-laravel.contracts', []);
             $blockchain = App::make('blockchain');
             $driver = $blockchain->driver();
-            
+
             $compiler = new ContractCompiler($config['compiler'] ?? []);
             $deployer = new ContractDeployer($driver, $compiler, $config);
             $interactor = new ContractInteractor($driver, $config);
@@ -75,12 +83,15 @@ class TestContractCommand extends Command
 
         } catch (\Exception $e) {
             $this->error('Testing failed: '.$e->getMessage());
-            
+
             if ($this->option('json')) {
-                $this->line(json_encode([
+                $jsonOutput = json_encode([
                     'success' => false,
                     'error' => $e->getMessage(),
-                ], JSON_PRETTY_PRINT));
+                ], JSON_PRETTY_PRINT);
+                if ($jsonOutput !== false) {
+                    $this->line($jsonOutput);
+                }
             }
 
             return Command::FAILURE;
@@ -92,7 +103,7 @@ class TestContractCommand extends Command
      *
      * @return array<string, mixed>
      */
-    protected function runBasicTests($contract, ContractInteractor $interactor): array
+    protected function runBasicTests(\AwsBlockchain\Laravel\Models\BlockchainContract $contract, ContractInteractor $interactor): array
     {
         $results = [
             'total' => 0,
@@ -152,7 +163,10 @@ class TestContractCommand extends Command
     protected function displayResults(array $results): int
     {
         if ($this->option('json')) {
-            $this->line(json_encode($results, JSON_PRETTY_PRINT));
+            $jsonOutput = json_encode($results, JSON_PRETTY_PRINT);
+            if ($jsonOutput !== false) {
+                $this->line($jsonOutput);
+            }
 
             return $results['failed'] > 0 ? Command::FAILURE : Command::SUCCESS;
         }
@@ -166,4 +180,3 @@ class TestContractCommand extends Command
         return $results['failed'] > 0 ? Command::FAILURE : Command::SUCCESS;
     }
 }
-

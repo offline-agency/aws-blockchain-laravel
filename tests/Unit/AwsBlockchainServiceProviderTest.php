@@ -152,7 +152,10 @@ class AwsBlockchainServiceProviderTest extends TestCase
         $provider->boot();
         $provider->boot();
 
-        $this->assertTrue(true); // If we get here, no exception was thrown
+        // Verify the provider is still in a valid state
+        $this->assertInstanceOf(AwsBlockchainServiceProvider::class, $provider);
+        $this->assertIsArray($provider->provides());
+        $this->assertNotEmpty($provider->provides());
     }
 
     public function test_register_method_can_be_called_multiple_times()
@@ -164,6 +167,10 @@ class AwsBlockchainServiceProviderTest extends TestCase
         $provider->register();
         $provider->register();
 
-        $this->assertTrue(true); // If we get here, no exception was thrown
+        // Verify services are still registered correctly
+        $this->assertInstanceOf(AwsBlockchainServiceProvider::class, $provider);
+        $this->assertTrue($this->app->bound('blockchain'));
+        $this->assertTrue($this->app->bound('blockchain.public'));
+        $this->assertTrue($this->app->bound('blockchain.private'));
     }
 }

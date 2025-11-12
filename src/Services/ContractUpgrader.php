@@ -243,6 +243,7 @@ class ContractUpgrader
                 'error' => $e->getMessage(),
                 'proxy' => $proxy->address,
             ]);
+
             throw $e;
         }
     }
@@ -348,4 +349,3 @@ class ContractUpgrader
         ];
     }
 }
-

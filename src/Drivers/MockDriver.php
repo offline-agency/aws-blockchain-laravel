@@ -263,6 +263,6 @@ class MockDriver implements BlockchainDriverInterface
     public function getBalance(string $address): string
     {
         // Return mock balance in wei
-        return (string) rand(1000000000000000000, 100000000000000000000);
+        return (string) rand(1000000000000000000, (int) 100000000000000000000);
     }
 }

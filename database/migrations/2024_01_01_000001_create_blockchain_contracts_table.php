@@ -35,13 +35,13 @@ return new class extends Migration
             // Add indexes for common queries
             $table->index(['name', 'version']);
             $table->index(['network', 'status']);
-            
+
             // Foreign key for proxy relationships
             $table->foreign('proxy_contract_id')
                 ->references('id')
                 ->on('blockchain_contracts')
                 ->onDelete('set null');
-                
+
             $table->foreign('implementation_of')
                 ->references('id')
                 ->on('blockchain_contracts')
@@ -57,4 +57,3 @@ return new class extends Migration
         Schema::dropIfExists('blockchain_contracts');
     }
 };
-

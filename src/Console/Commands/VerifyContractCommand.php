@@ -19,6 +19,12 @@ class VerifyContractCommand extends Command
     {
         $identifier = $this->argument('contract');
 
+        if (! is_string($identifier)) {
+            $this->error('Contract identifier must be a string');
+
+            return Command::FAILURE;
+        }
+
         $contract = $this->findContract($identifier);
 
         if (! $contract) {
@@ -35,11 +41,14 @@ class VerifyContractCommand extends Command
             sleep(2);
 
             if ($this->option('json')) {
-                $this->line(json_encode([
+                $jsonOutput = json_encode([
                     'success' => true,
                     'contract' => $contract->name,
                     'verified' => true,
-                ], JSON_PRETTY_PRINT));
+                ], JSON_PRETTY_PRINT);
+                if ($jsonOutput !== false) {
+                    $this->line($jsonOutput);
+                }
             } else {
                 $this->info('✓ Contract verified successfully!');
             }
@@ -64,4 +73,3 @@ class VerifyContractCommand extends Command
         return $query->first();
     }
 }
-

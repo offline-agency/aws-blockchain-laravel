@@ -30,7 +30,6 @@ class ContractInteractor
      *
      * @param  array<int, mixed>  $params
      * @param  array<string, mixed>  $options
-     * @return mixed
      */
     public function call(
         BlockchainContract $contract,
@@ -68,6 +67,7 @@ class ContractInteractor
                 'method' => $methodName,
                 'error' => $e->getMessage(),
             ]);
+
             throw $e;
         }
     }
@@ -76,13 +76,16 @@ class ContractInteractor
      * Call a view/pure function (no transaction)
      *
      * @param  array<int, mixed>  $params
-     * @return mixed
      */
     protected function callView(
         BlockchainContract $contract,
         string $methodName,
         array $params
     ): mixed {
+        if ($contract->address === null) {
+            throw new \RuntimeException('Contract address is required for calling methods');
+        }
+
         $result = $this->driver->callContract(
             $contract->address,
             $contract->abi ?? '[]',
@@ -105,7 +108,6 @@ class ContractInteractor
      * @param  array<int, mixed>  $params
      * @param  array<string, mixed>  $options
      * @param  array<string, mixed>  $method
-     * @return mixed
      */
     protected function sendTransaction(
         BlockchainContract $contract,
@@ -148,7 +150,7 @@ class ContractInteractor
         // Wait for confirmation if requested
         if ($options['wait'] ?? false) {
             $receipt = $this->waitForConfirmation($transactionHash, $options['timeout'] ?? 300);
-            
+
             if ($receipt) {
                 $txRecord->update([
                     'status' => $receipt['status'] ? 'success' : 'failed',
@@ -190,7 +192,7 @@ class ContractInteractor
             ];
 
             $estimate = $this->driver->estimateGas($transaction);
-            
+
             // Add safety margin
             $multiplier = $this->config['gas']['price_multiplier'] ?? 1.1;
 
@@ -258,7 +260,9 @@ class ContractInteractor
     public function formatReturnValue(mixed $value, array $options = []): string
     {
         if ($options['json'] ?? false) {
-            return json_encode($value, JSON_PRETTY_PRINT);
+            $json = json_encode($value, JSON_PRETTY_PRINT);
+
+            return $json !== false ? $json : '{}';
         }
 
         if (is_array($value)) {
@@ -281,8 +285,8 @@ class ContractInteractor
     protected function findMethodInAbi(array $abi, string $methodName): ?array
     {
         foreach ($abi as $item) {
-            if (is_array($item) && 
-                ($item['type'] ?? '') === 'function' && 
+            if (is_array($item) &&
+                ($item['type'] ?? '') === 'function' &&
                 ($item['name'] ?? '') === $methodName) {
                 return $item;
             }
@@ -363,4 +367,3 @@ class ContractInteractor
         ]);
     }
 }
-

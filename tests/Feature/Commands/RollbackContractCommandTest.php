@@ -56,4 +56,49 @@ class RollbackContractCommandTest extends TestCase
         ])
             ->assertFailed(); // Fails because no previous version, but tests JSON flag
     }
+
+    public function test_rollback_command_find_contract_by_address(): void
+    {
+        $contract = BlockchainContract::create([
+            'name' => 'TestContract',
+            'version' => '1.0.0',
+            'type' => 'evm',
+            'network' => 'local',
+            'address' => '0x1234567890123456789012345678901234567890',
+            'status' => 'deployed',
+            'is_upgradeable' => true,
+        ]);
+
+        $command = $this->app->make(\AwsBlockchain\Laravel\Console\Commands\RollbackContractCommand::class);
+        $reflection = new \ReflectionClass($command);
+        $method = $reflection->getMethod('findContract');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($command, '0x1234567890123456789012345678901234567890');
+
+        $this->assertNotNull($result);
+        $this->assertEquals('TestContract', $result->name);
+    }
+
+    public function test_rollback_command_find_contract_by_name(): void
+    {
+        $contract = BlockchainContract::create([
+            'name' => 'TestContract',
+            'version' => '1.0.0',
+            'type' => 'evm',
+            'network' => 'local',
+            'status' => 'deployed',
+            'is_upgradeable' => true,
+        ]);
+
+        $command = $this->app->make(\AwsBlockchain\Laravel\Console\Commands\RollbackContractCommand::class);
+        $reflection = new \ReflectionClass($command);
+        $method = $reflection->getMethod('findContract');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($command, 'TestContract');
+
+        $this->assertNotNull($result);
+        $this->assertEquals('TestContract', $result->name);
+    }
 }

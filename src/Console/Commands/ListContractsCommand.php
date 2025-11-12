@@ -57,4 +57,3 @@ class ListContractsCommand extends Command
         return Command::SUCCESS;
     }
 }
-

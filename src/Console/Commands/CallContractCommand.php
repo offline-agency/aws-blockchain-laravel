@@ -40,6 +40,18 @@ class CallContractCommand extends Command
         $contractIdentifier = $this->argument('contract');
         $methodName = $this->argument('method');
 
+        if (! is_string($contractIdentifier)) {
+            $this->error('Contract identifier must be a string');
+
+            return Command::FAILURE;
+        }
+
+        if (! is_string($methodName)) {
+            $this->error('Method name must be a string');
+
+            return Command::FAILURE;
+        }
+
         try {
             // Find contract
             $contract = $this->findContract($contractIdentifier);
@@ -58,8 +70,9 @@ class CallContractCommand extends Command
 
             // Parse parameters
             $params = [];
-            if ($this->option('params')) {
-                $params = $interactor->parseParameters($this->option('params'));
+            $paramsOption = $this->option('params');
+            if ($paramsOption && is_string($paramsOption)) {
+                $params = $interactor->parseParameters($paramsOption);
             }
 
             // Prepare options
@@ -82,12 +95,15 @@ class CallContractCommand extends Command
 
         } catch (\Exception $e) {
             $this->error('Contract call failed: '.$e->getMessage());
-            
+
             if ($this->option('json')) {
-                $this->line(json_encode([
+                $jsonOutput = json_encode([
                     'success' => false,
                     'error' => $e->getMessage(),
-                ], JSON_PRETTY_PRINT));
+                ], JSON_PRETTY_PRINT);
+                if ($jsonOutput !== false) {
+                    $this->line($jsonOutput);
+                }
             }
 
             return Command::FAILURE;
@@ -111,11 +127,11 @@ class CallContractCommand extends Command
         // If not found, try by name
         if (! $contract) {
             $query = BlockchainContract::where('name', $identifier);
-            
+
             if ($this->option('network')) {
                 $query->where('network', $this->option('network'));
             }
-            
+
             $contract = $query->where('status', 'deployed')->latest()->first();
         }
 
@@ -129,25 +145,28 @@ class CallContractCommand extends Command
      */
     protected function displayResult(string $methodName, mixed $result, array $options): int
     {
-        if ($options['json']) {
+        if (isset($options['json']) && $options['json']) {
             $output = [
                 'success' => true,
                 'method' => $methodName,
                 'result' => $result,
             ];
 
-            $this->line(json_encode($output, JSON_PRETTY_PRINT));
+            $jsonOutput = json_encode($output, JSON_PRETTY_PRINT);
+            if ($jsonOutput !== false) {
+                $this->line($jsonOutput);
+            }
 
             return Command::SUCCESS;
         }
 
         $this->info("✓ Method '{$methodName}' executed successfully!");
         $this->newLine();
-        
+
         if (is_array($result) && isset($result['transaction_hash'])) {
             $this->info('Transaction sent:');
             $this->line('  Hash: '.$result['transaction_hash']);
-            
+
             if (isset($result['transaction_record'])) {
                 $this->line('  Status: '.$result['transaction_record']->status);
             }
@@ -159,4 +178,3 @@ class CallContractCommand extends Command
         return Command::SUCCESS;
     }
 }
-
