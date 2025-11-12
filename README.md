@@ -1,4 +1,4 @@
-# AWS Blockchain Laravel Package
+# AWS Blockchain Laravel
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/offline-agency/aws-blockchain-laravel.svg?style=flat-square)](https://packagist.org/packages/offline-agency/aws-blockchain-laravel)
 [![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/offline-agency/aws-laravel-blockchain/tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/offline-agency/aws-laravel-blockchain/actions?query=workflow%3ATests+branch%3Amain)
@@ -7,6 +7,8 @@
 [![Total Downloads](https://img.shields.io/packagist/dt/offline-agency/aws-blockchain-laravel.svg?style=flat-square)](https://packagist.org/packages/offline-agency/aws-blockchain-laravel)
 
 A comprehensive Laravel package for AWS blockchain integration, specifically designed for supply chain traceability applications.
+
+![AWS Blockchain Laravel Banner](https://banners.beyondco.de/AWS%20Blockchain%20Laravel.png?theme=dark&packageManager=composer+require&packageName=offline-agency%2Faws-blockchain-laravel&pattern=cage&style=style_2&description=A+comprehensive+Laravel+package+for+AWS+blockchain+integration%2C+specifically+designed+for+supply+chain+traceability+applications&md=1&showWatermark=0&fontSize=100px&images=https%3A%2F%2Flaravel.com%2Fimg%2Flogomark.min.svg)
 
 ## Features
 
@@ -483,6 +485,40 @@ composer test
 composer test-coverage
 ```
 
+## Changelog
+
+Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
+
+## Contributing
+
+Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
+
+## Security Vulnerabilities
+
+Please review our [security policy](SECURITY.md) on how to report security vulnerabilities.
+
+## Credits
+
+- **Offline Agency**
+- **All Contributors**
+
+Based on [italia/spid-laravel](https://github.com/italia/spid-laravel)
+
+## Support
+
+For support and questions:
+
+- **Email**: support@offlineagency.it
+- **GitHub Issues**: [Create an issue](https://github.com/offline-agency/aws-laravel-blockchain/issues)
+
 ## License
 
-MIT License - see LICENSE file for details.
+The MIT License (MIT). Please see [License File](LICENSE) for more information.
+
+## About Offline Agency
+
+Offline Agency is a web development agency based in Italy, specializing in Laravel and Filament applications.
+
+- **Website**: https://offlineagency.it
+- **GitHub**: [@offline-agency](https://github.com/offline-agency)
+- **Email**: support@offlineagency.it
